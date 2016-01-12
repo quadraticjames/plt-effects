@@ -61,3 +61,21 @@
 (define-metafunction L+Γ
   [(different x_1 x_1) #f]
   [(different x_1 x_2) #t])
+
+(test-equal
+ (judgment-holds
+  (types · (λ (x num) x) t)
+  t)
+ (list (term (→ num num))))
+
+(test-equal
+ (judgment-holds
+  (types · (amb 1 2 3) t)
+  t)
+ (list (term num)))
+
+(test-equal
+ (judgment-holds
+  (types · (+ 1 2) t)
+  t)
+ (list (term num)))
