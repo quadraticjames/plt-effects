@@ -5,7 +5,7 @@
   (e (e e)
      (λ (x t) e)
      x
-     (amb e ...)
+     (amb t e ...)
      number
      (+ e ...)
      (if0 e e e)
@@ -54,13 +54,19 @@
    -----------------------------
    (types Γ (if0 e_1 e_2 e_3) t)]
  
-  [(types Γ e num) ...
+  [(types Γ e t) ...
+   (side-condition (same t ...))
    --------------------------
-   (types Γ (amb e ...) num)])
+   (types Γ (amb t_1 e ...) t_1)])
 
 (define-metafunction L+Γ
   [(different x_1 x_1) #f]
   [(different x_1 x_2) #t])
+
+(define-metafunction L+Γ
+  [(same t_1) #t]
+  [(same t_1 t_1 t_2 ...) (same t_1 t_2 ...)]
+  [(same t_1 t_2 ...) #f])
 
 (test-equal
  (judgment-holds
@@ -70,9 +76,15 @@
 
 (test-equal
  (judgment-holds
-  (types · (amb 1 2 3) t)
+  (types · (amb num 1 2 3) t)
   t)
  (list (term num)))
+
+(test-equal
+ (judgment-holds
+  (types · (amb (→ num num) (λ (x num) x) (λ (x num) 0)) t)
+  t)
+ (list (term (→ num num))))
 
 (test-equal
  (judgment-holds
