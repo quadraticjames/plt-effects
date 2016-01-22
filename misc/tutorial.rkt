@@ -3,9 +3,10 @@
 
 (define-language L
   (e (e e)
-     (λ (x t) ... e)
+     (λ (x_0 t_0) (x_1 t_1) ... e)
      x
-     (amb t e ...)
+     (send e)
+     recv
      number
      (+ e ...)
      (if0 e e e)
@@ -13,7 +14,7 @@
   (t (→ t t) num)
   (x variable-not-otherwise-mentioned))
 
-(define-extended-language L+Γ L [Γ · ((x : t) ... Γ)])
+(define-extended-language L+Γ L [Γ · (x : t Γ)])
 
 (define-judgment-form
   L+Γ
@@ -24,18 +25,14 @@
    (types Γ e_2 t_2)
    -------------------------
    (types Γ (e_1 e_2) t_3)]
- 
-  [(types Γ e t_2)
-   -----------------------------------
-   (types Γ (λ e) t_2)]
   
-  [(types ((x : t_1) Γ) e t_2)
+  [(types (x : t_1 Γ) e t_2)
    -----------------------------------
    (types Γ (λ (x t_1) e) (→ t_1 t_2))]
   
-  [(types ((x_0 : t_0) Γ) (λ (x_1 t_1) ... e) t_2)
+  [(types (x_0 : t_0 Γ) (λ (x_1 t_1) (x_2 t_2) ... e) t_3)
    -----------------------------------
-   (types Γ (λ (x_0 t_0) (x_1 t_1) ... e) (→ t_0 t_2))]
+   (types Γ (λ (x_0 t_0) (x_1 t_1) (x_2 t_2) ... e) (→ t_0 t_3))]
  
   [(types Γ e (→ (→ t_1 t_2) (→ t_1 t_2)))
    ---------------------------------------
@@ -60,12 +57,7 @@
    (types Γ e_2 t)
    (types Γ e_3 t)
    -----------------------------
-   (types Γ (if0 e_1 e_2 e_3) t)]
- 
-  [(types Γ e t) ...
-   (side-condition (same t_1 t ...))
-   --------------------------
-   (types Γ (amb t_1 e ...) t_1)])
+   (types Γ (if0 e_1 e_2 e_3) t)])
 
 (define-metafunction L+Γ
   [(different x_1 x_1) #f]
@@ -84,18 +76,6 @@
 
 (test-equal
  (judgment-holds
-  (types · (amb num 1 2 3) t)
-  t)
- (list (term num)))
-
-(test-equal
- (judgment-holds
-  (types · (amb (→ num num) (λ (x num) x) (λ (x num) 0)) t)
-  t)
- (list (term (→ num num))))
-
-(test-equal
- (judgment-holds
   (types · (+ 1 2) t)
   t)
  (list (term num)))
@@ -108,6 +88,7 @@
      (+ v ... E e ...)
      (if0 E e e)
      (fix E)
+     (send E)
      hole)
   (v (λ (x t) ... e)
      (fix v)
@@ -152,6 +133,9 @@
    (--> (in-hole P (+ number ...))
         (in-hole P (Σ number ...))
         "+")
-   (--> (e_1 ... (in-hole E (amb t e_2 ...)) e_3 ...)
-        (e_1 ... (in-hole E e_2) ... e_3 ...)
-        "amb")))
+   (--> (e_left ... (in-hole E_0 (send v)) e_middle ... (in-hole E_1 recv) e_right ...)
+        (e_left ... (in-hole E_0 0) e_middle ... (in-hole E_1 v) e_right ...)
+        "communication")
+   (--> (e_left ... (in-hole E_1 recv) e_middle ... (in-hole E_0 (send v)) e_right ...)
+        (e_left ... (in-hole E_1 v) e_middle ... (in-hole E_0 0) e_right ...)
+        "communication2")))
