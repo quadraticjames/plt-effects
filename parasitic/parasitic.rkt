@@ -17,4 +17,7 @@
   (x variable-not-otherwise-mentioned)
   (r (ρ e))
   (c (ch x))
-  (κ (con v))) 
+  (κ (const v))
+  (n (e r k_0 k_1 ...))
+  (k cont))
+
