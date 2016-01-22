@@ -3,7 +3,7 @@
 
 (define-language L
   (e (e e)
-     (λ (x t) e)
+     (λ (x t) ... e)
      x
      (amb t e ...)
      number
@@ -13,7 +13,7 @@
   (t (→ t t) num)
   (x variable-not-otherwise-mentioned))
 
-(define-extended-language L+Γ L [Γ · (x : t Γ)])
+(define-extended-language L+Γ L [Γ · ((x : t) ... Γ)])
 
 (define-judgment-form
   L+Γ
@@ -25,9 +25,17 @@
    -------------------------
    (types Γ (e_1 e_2) t_3)]
  
-  [(types (x : t_1 Γ) e t_2)
+  [(types Γ e t_2)
+   -----------------------------------
+   (types Γ (λ e) t_2)]
+  
+  [(types ((x : t_1) Γ) e t_2)
    -----------------------------------
    (types Γ (λ (x t_1) e) (→ t_1 t_2))]
+  
+  [(types ((x_0 : t_0) Γ) (λ (x_1 t_1) ... e) t_2)
+   -----------------------------------
+   (types Γ (λ (x_0 t_0) (x_1 t_1) ... e) (→ t_0 t_2))]
  
   [(types Γ e (→ (→ t_1 t_2) (→ t_1 t_2)))
    ---------------------------------------
@@ -101,7 +109,7 @@
      (if0 E e e)
      (fix E)
      hole)
-  (v (λ (x t) e)
+  (v (λ (x t) ... e)
      (fix v)
      number))
 
@@ -112,9 +120,13 @@
 
 (require redex/tut-subst)
 (define-metafunction Ev
-  subst : x v e -> e
-  [(subst x v e)
-   ,(subst/proc x? (list (term x)) (list (term v)) (term e))])
+  subst : (x v) ... e -> e
+  [(subst (x v) ... e)
+   ,(subst/proc x?
+                (term (x ...))
+                (term (v ...))
+                (term e))])
+
 (define x? (redex-match Ev x))
 
 (define red
@@ -128,11 +140,11 @@
         (in-hole P e_2)
         (side-condition (not (equal? 0 (term v))))
         "if0f")
-   (--> (in-hole P ((fix (λ (x t) e)) v))
-        (in-hole P (((λ (x t) e) (fix (λ (x t) e))) v))
+   (--> (in-hole P ((fix (λ (x t) ... e)) v))
+        (in-hole P (((λ (x t) ... e) (fix (λ (x t) ... e))) v))
         "fix")
-   (--> (in-hole P ((λ (x t) e) v))
-        (in-hole P (subst x v e))
+   (--> (in-hole P ((λ (x t) ..._1 e) v ..._1))
+        (in-hole P (subst (x v) ... e))
         "βv")
    (--> (in-hole P (+ number ...))
         (in-hole P (Σ number ...))
