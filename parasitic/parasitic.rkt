@@ -52,5 +52,6 @@
   (reduction-relation
    Ev
    #:domain p
-   (--> ((in-hole H (control chan r k_0 k_1 ...)) C)
-        ((in-hole H (return ((ret c)) k_0 k_1 ...)) C))))
+   (--> ((in-hole H (control chan r k_0 k_1 ...)) (χ (c_1 (k_2 ...) (k_3 ...)) ...))
+        ((in-hole H (return ((ret (fresh c))) k_0 k_1 ...)) (χ c (c_1 (k_2 ...) (k_3 ...)) ...))
+        "channel")))
