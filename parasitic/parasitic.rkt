@@ -23,7 +23,7 @@
   (c (ch x))
   (x variable-not-otherwise-mentioned)
   (t (th x))
-  (r (ρ x e))
+  (r (ρ (x v) ...))
   (k (f ...))
   (n (e r k_0 k_1 ...))
   (f (ret v)
@@ -36,9 +36,21 @@
      (sblk v_1 v_2)
      (pval e x)
      (prep v))
-  (T (τ x s))
-  (C (χ x (k_0 ... & k_1 ...)))
+  (T (τ (t s) ...))
+  (C (χ (c (k_0 ...) (k_1 ...)) ...))
   (s (control e r k_0 k_1 ...)
      (return k ...)
      (halt v)))
 
+(define-extended-language Ev Pt
+  (p (T C))
+  (H (τ (t s) ... (t S) (t s) ...))
+  (S s
+     hole))
+
+(define red
+  (reduction-relation
+   Ev
+   #:domain p
+   (--> ((in-hole H (control chan r k_0 k_1 ...)) C)
+        ((in-hole H (return ((ret c)) k_0 k_1 ...)) C))))
