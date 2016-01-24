@@ -52,6 +52,17 @@
   (reduction-relation
    Ev
    #:domain p
-   (--> ((in-hole H (control chan r k_0 k_1 ...)) (χ (c_1 (k_2 ...) (k_3 ...)) ...))
-        ((in-hole H (return ((ret (fresh c))) k_0 k_1 ...)) (χ c (c_1 (k_2 ...) (k_3 ...)) ...))
-        "channel")))
+   (--> ((in-hole H (control chan r (f ...) k_1 ...)) (χ (c_1 (k_2 ...) (k_3 ...)) ...))
+        ((in-hole H (return ((ret (fresh c)) f ...) k_1 ...)) (χ c (c_1 (k_2 ...) (k_3 ...)) ...))
+        "channel")
+   (--> ((τ (t_left s_left) ...
+            (t (control (spawnhost e) r (f ...) k ...))
+            (t_right s_right) ...)
+         C)
+        ((τ (t_left s_left) ...
+            (t (return ((ret unit) f ...) k ...))
+            (t_right s_right) ...
+            ((fresh t_1) (control e r)))
+         C)
+        "spawnhost")
+   ))
