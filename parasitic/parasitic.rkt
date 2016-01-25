@@ -62,7 +62,17 @@
         ((τ (t_left s_left) ...
             (t (return ((ret unit) f ...) k ...))
             (t_right s_right) ...
-            ((fresh t_1) (control e r)))
+            ((fresh t_1) (control e r ())))
          C)
         "spawnhost")
+   (--> ((τ (t_left s_left) ...
+            (t (control (inflate e) r (f ...) k ...))
+            (t_right s_right) ...)
+         C)
+        ((τ (t_left s_left) ...
+            (t (return k ...))
+            (t_right s_right) ...
+            ((fresh t_1) (control e r (f ...))))
+         C)
+        "inflate")
    ))
