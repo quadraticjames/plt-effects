@@ -110,6 +110,9 @@
    (--> (in-hole p (control (e_1 e_2) r (f ...) k ...))
         (in-hole p (control e_1 r ((arg e_2 r) f ...) k ...))
         "application")
+   (--> (in-hole p (control (reify e) r k_0 k_1 ...))
+        (in-hole p (control (e k_0) r () k_1 ...))
+        "reify")
    ))
 
 (define-metafunction Ev
