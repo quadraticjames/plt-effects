@@ -137,6 +137,9 @@
    (--> ((in-hole H (return ((ret v) (arg e r) f ...) k ...)) C)
         ((in-hole H (control e r ((fun v) f ...) k ...)) C)
         "argument")
+   (--> ((in-hole H (return ((ret v) (fun (λ x e (ρ (x_0 v_0) ...))) f ...) k ...)) C)
+        ((in-hole H (control e (ρ (x_0 v_0) ... (x v)) (f ...) k ...)) C)
+        "function")
    ))
 
 (define-metafunction Ev
