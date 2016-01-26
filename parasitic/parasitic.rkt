@@ -140,6 +140,9 @@
    (--> ((in-hole H (return ((ret v) (fun (λ x e (ρ (x_0 v_0) ...))) f ...) k ...)) C)
         ((in-hole H (control e (ρ (x_0 v_0) ... (x v)) (f ...) k ...)) C)
         "function")
+   (--> ((in-hole H (return ((ret k_0) (pval e r) f ...) k ...)) C)
+        ((in-hole H (control e r ((prep k_0) f ...) k ...)) C)
+        "prepareValue")
    ))
 
 (define-metafunction Ev
