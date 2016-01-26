@@ -119,6 +119,9 @@
    (--> ((in-hole H (control (prepare e_1 e_2) r (f ...) k ...)) C)
         ((in-hole H (control e_1 r ((pval e_2 r) f ...) k ...)) C)
         "prepare")
+   (--> ((in-hole H (control (recv e) r (f ...) k ...)) C)
+        ((in-hole H (control e r (recv f ...) k ...)) C)
+        "receive")
    ))
 
 (define-metafunction Ev
