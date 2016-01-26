@@ -149,6 +149,9 @@
    (--> ((in-hole H (return ((ret c) (sval e r) f ...) k ...)) C)
         ((in-hole H (control e r ((send c) f ...) k ...)) C)
         "sendValue")
+   (--> ((in-hole H (return ((ret v) (send c) f ...) k ...)) C)
+        ((in-hole H (return ((sblk c v) f ...) k ...)) C)
+        "sendBlock")
    ))
 
 (define-metafunction Ev
