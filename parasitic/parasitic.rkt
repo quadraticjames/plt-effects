@@ -98,4 +98,7 @@
         ((in-hole H (return ((ret unit) f_2 ...) ((ret v) f_1 ...) k_1 ...))
          (in-hole N (c (k_s ...) (k_r ...))))
         "recvMatch")
+   (--> (in-hole p (control κ r (f ...) k ...))
+        (in-hole p (return ((ret κ) f ...) k ...))
+        "constant")
    ))
