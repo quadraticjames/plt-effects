@@ -101,4 +101,14 @@
    (--> (in-hole p (control κ r (f ...) k ...))
         (in-hole p (return ((ret κ) f ...) k ...))
         "constant")
+   (--> (in-hole p (control x r (f ...) k ...))
+        (in-hole p (return ((ret x) f ...) k ...))
+        "variable")
    ))
+
+(define-metafunction Ev
+  var-lookup : r x -> v
+  [(var-lookup (ρ (x v) (x_1 v_1) ...) x)
+   v]
+  [(var-lookup (ρ (x_0 v_0) (x_1 v_1) ...) x)
+   (var-lookup (ρ (x_1 v_1) ...) x)])
