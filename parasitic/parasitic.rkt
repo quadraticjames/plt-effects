@@ -125,6 +125,9 @@
    (--> ((in-hole H (control (spawnParasite e) r (f ...) k ...)) C)
         ((in-hole H (control e r () ((ret unit) f ...) k ...)) C)
         "spawnParasite")
+   (--> ((in-hole H (control (attach k_0) r (f ...) k_1 ...)) C)
+        ((in-hole H (return k_0 ((ret unit) f ...) k_1 ...)) C)
+        "attachParasite")
    ))
 
 (define-metafunction Ev
