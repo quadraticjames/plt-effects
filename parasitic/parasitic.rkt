@@ -134,6 +134,9 @@
    (--> ((in-hole H (return ((ret v)) k ...)) C)
         ((in-hole H (return k ...)) C)
         "parasiteHalt")
+   (--> ((in-hole H (return ((ret v) (arg e r) f ...) k ...)) C)
+        ((in-hole H (control e r ((fun v) f ...) k ...)) C)
+        "argument")
    ))
 
 (define-metafunction Ev
