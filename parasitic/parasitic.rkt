@@ -131,6 +131,9 @@
    (--> ((in-hole H (return ((ret v)))) C)
         ((in-hole H (halt v)) C)
         "threadHalt")
+   (--> ((in-hole H (return ((ret v)) k ...)) C)
+        ((in-hole H (return k ...)) C)
+        "parasiteHalt")
    ))
 
 (define-metafunction Ev
