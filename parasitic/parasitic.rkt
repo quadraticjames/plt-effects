@@ -107,6 +107,9 @@
    (--> (in-hole p (control (λ x e r) r (f ...) k ...))
         (in-hole p (return ((ret (λ x e r)) f ...) k ...))
         "closure")
+   (--> (in-hole p (control (e_1 e_2) r (f ...) k ...))
+        (in-hole p (control e_1 r ((arg e_2 r) f ...) k ...))
+        "application")
    ))
 
 (define-metafunction Ev
