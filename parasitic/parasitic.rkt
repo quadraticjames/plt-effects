@@ -143,6 +143,9 @@
    (--> ((in-hole H (return ((ret k_0) (pval e r) f ...) k ...)) C)
         ((in-hole H (control e r ((prep k_0) f ...) k ...)) C)
         "prepareValue")
+   (--> ((in-hole H (return ((ret v) (prep f_0 ...) f ...) k ...)) C)
+        ((in-hole H (return ((ret ((ret v) f_0 ...)) f ...) k ...)) C)
+        "prepareFinalize")
    ))
 
 (define-metafunction Ev
