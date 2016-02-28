@@ -1,0 +1,111 @@
+% Template for a Computer Science Tripos Part II project dissertation
+\documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
+\usepackage[margin=25mm]{geometry}  % adjusts page layout
+\usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
+\usepackage{verbatim}
+
+\raggedbottom                           % try to avoid widows and orphans
+\sloppy
+\clubpenalty1000%
+\widowpenalty1000%
+
+\renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
+                                        % more readable
+
+\begin{document}
+
+\bibliographystyle{plain}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title
+
+
+\pagestyle{empty}
+
+\rightline{\LARGE \textbf{James Wright}}
+
+\vspace*{60mm}
+\begin{center}
+\Huge
+\textbf{Formalising the semantics of algebraic effects in OCaml} \\[5mm]
+Computer Science Tripos -- Part II \\[5mm]
+Trinity Hall \\[5mm]
+\today  % today's date
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proforma, table of contents and list of figures
+
+\pagestyle{plain}
+
+\chapter*{Proforma}
+
+{\large
+\begin{tabular}{p{4.4cm}p{11cm}}
+Name:               & \bf James Wright                       \\
+College:            & \bf Trinity Hall                     \\
+Project Title:      & \bf Formalising the semantics of algebraic effects in OCaml \\
+Examination:        & \bf Computer Science Tripos -- Part II, 2015--16  \\
+Word Count:         & \bf unknown  \\
+Project Originator: & KC Sivaramakrishnan                    \\
+Supervisor:         & KC Sivaramakrishnan                    \\ 
+\end{tabular}
+}
+
+
+\section*{Original Aims of the Project}
+
+To formalise the semantics of algebraic effects, a proposed addition to OCaml, as a CEK machine, in order to perform subsequent random and exhaustive testing of concurrent schedules in the program. The testing should allow us to show desirable properties such as determinism and absence of deadlock.
+
+\section*{Work Completed}
+
+\section*{Special Difficulties}
+
+None.
+ 
+\newpage
+\section*{Declaration}
+
+I, James Wright of Trinity Hall, being a candidate for Part II of the Computer
+Science Tripos, hereby declare
+that this dissertation and the work described in it are my own work,
+unaided except as may be specified below, and that the dissertation
+does not contain material that has already been used to any substantial
+extent for a comparable purpose.
+
+\bigskip
+\leftline{Signed}
+
+\medskip
+\leftline{Date}
+
+\tableofcontents
+
+\listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% now for the chapters
+
+\pagestyle{headings}
+
+\chapter{Introduction}
+
+\chapter{Preparation}
+
+
+\chapter{Implementation}
+
+\chapter{Evaluation}
+
+\chapter{Conclusion}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% the appendices
+\appendix
+
+\chapter{Project Proposal}
+
+\end{document}
