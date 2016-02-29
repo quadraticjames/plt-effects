@@ -92,7 +92,17 @@ extent for a comparable purpose.
 
 \chapter{Introduction}
 
+\section{Algebraic effects}
+
+There exist multicore-capable functional programming languages, such as Haskell, Manticore, F\#, and MultiMLton, whose runtimes provide support for concurrency---the concurrency primitives are baked in to the runtime system. This has the advantage of natively supporting multicore capabilities, but it also means that the runtimes can become burdensomely complicated. OCaml, on the other hand, is not yet multicore-capable and does not have this concurrency support.
+Algebraic effects is a proposed addition to OCaml that would provide this. In contrast to the implementations in the other aforementioned functional programming languages, algebraic effects provide a modular abstraction for expressing effectful computation, which allows programmers to implement independent schedulers and new concurrency primitives as OCaml libraries.
+
+\section{Formalisation}
+
+The syntax and semantics for algebraic effects have been designed and implemented by OCaml Labs, but the new semantics has not yet been formalised. Formalisation allows for random and exhaustive testing of concurrent schedules, which would allow us to show properties such as determinism or absence of deadlock.
+
 \chapter{Preparation}
+
 
 
 \chapter{Implementation}
