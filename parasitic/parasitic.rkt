@@ -4,51 +4,23 @@
 (define-language Pt
   (e x
      v
-     (e e)
-     (spawnHost e)
-     (spawnParasite e)
-     (attach e)
-     (prepare e e)
-     (reify e)
-     (inflate e)
-     chan
-     (send e e)
-     (recv e))
+     (e e))
   (v unit
      (λ x e r)
-     c
-     κ
      k)
-  (κ (const v))
-  (c (ch x))
   (x variable-not-otherwise-mentioned)
-  (t (th x))
   (r (ρ (x v) ...))
   (k (f ...))
   (f (ret v)
-     (arg e x)
-     (fun v)
-     recv
-     (sval e r)
-     (send v)
-     (rblk v)
-     (sblk c v)
-     (pval e x)
-     (prep v))
-  (T (τ (t s) ...))
-  (m (c (k_0 ...) (k_1 ...)))
-  (C (χ m ...))
+     (arg e x))
   (s (control e r k_0 k_1 ...)
      (return k ...)
      (halt v)))
 
 (define-extended-language Ev Pt
-  (p (T C))
-  (H (τ (t s) ... (t S) (t s) ...))
+  (p s)
+  (P S)
   (S s
-     hole)
-  (N (χ m ... M m ...))
-  (M (c (k_0 ...) (k_1 ...))
      hole))
 
 (define red
