@@ -33,21 +33,51 @@
    (--> (control v r (f ...))
         (return ((ret v) f ...))
         "value")
-   (--> (control x (ρ (x_left v_left) ... (x v) (x_right v_right) ...) (f ...))
-        (return ((ret v) f ...))
+   #|
+(control unit (ρ) ())
+should reduce to
+(return ((ret unit)))
+   |#
+   (--> (control x r (f ...))
+        (return ((ret (var-lookup r x)) f ...))
         "variable")
+   #|
+(control x (ρ (x unit)) ())
+should reduce to
+(return ((ret unit)))
+   |#
    (--> (control (λ x e) r (f ...))
         (return ((ret (λ x e r)) f ...))
         "closure")
+   #|
+(control (λ x x) (ρ) ())
+should reduce to
+(return ((ret (λ x x (ρ)))))
+   |#
    (--> (control (e_1 e_2) r (f ...))
         (control e_1 r ((arg e_2 r) f ...))
         "application")
+   #|
+(control ((λ x x) unit) (ρ) ())
+should reduce to
+(control (λ x x) (ρ) ((arg unit (ρ))))
+   |#
    (--> (return ((ret v) (arg e r) f ...))
         (control e r ((fun v) f ...))
         "argument")
+   #|
+(return ((ret (λ x x (ρ))) (arg unit (ρ))))
+should reduce to
+(control unit (ρ) ((fun (λ x x (ρ)))))
+   |#
    (--> (return ((ret v) (fun (λ x e (ρ (x_0 v_0) ...))) f ...))
         (control e (ρ (x_0 v_0) ... (x v)) (f ...))
         "function")
+   #|
+(return ((ret unit) (fun (λ x x (ρ)))))
+should reduce to
+(control x (ρ (x unit)) ())
+   |#
    ))
 
 (define-metafunction Ev
