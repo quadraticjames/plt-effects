@@ -78,6 +78,12 @@ should reduce to
 should reduce to
 (control x (ρ (x unit)) () ())
    |#
+   (--> (return ((ret v)))
+        (halt v)
+        "threadHalt")
+   (--> (return ((ret v)) k_1 k_2 ...)
+        (return k_1 k_2 ...)
+        "parasiteHalt")
    ))
 
 (define-metafunction Ev
