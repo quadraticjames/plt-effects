@@ -5,7 +5,9 @@
   (e x
      v
      (e e)
-     (λ x e))
+     (λ x e)
+     k
+     (handle e e e))
   (v unit
      (λ x e r)
      κ
