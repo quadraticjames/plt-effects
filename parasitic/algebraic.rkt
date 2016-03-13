@@ -6,11 +6,9 @@
      v
      (e e)
      (λ x e)
-     k
      (handle e e e))
   (v unit
      (λ x e r)
-     κ
      k)
   (x variable-not-otherwise-mentioned)
   (r (ρ (x v) ...))
