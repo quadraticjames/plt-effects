@@ -18,7 +18,8 @@
      (fun v)
      (hnd1 e e r)
      (hnd2 v e r)
-     (hnd3 v v))
+     (hnd3 v v)
+     (hdl v v))
   (s (control e r k_0 k_1 ...)
      (return k_0 k_1 ...)
      (halt v)))
@@ -89,8 +90,11 @@ should reduce to
 should reduce to
 (halt unit)
    |#
-   (--> (return ((ret v)) k_1 k_2 ...)
-        (return k_1 k_2 ...)
+   (--> (return ((ret v)) ((hdl v_hval v_heff) f ...) k_2 ...)
+        (return ((ret v) (fun v_hval) f ...) k_2 ...)
+        "handleHalt")
+   (--> (return ((ret v)) (f ...) k_2 ...)
+        (return ((ret v) f ...) k_2 ...)
         "parasiteHalt")
    #|
 (return ((ret unit)) ((ret unit)))
@@ -107,7 +111,7 @@ should reduce to
         (control e_3 r ((hnd3 v_1 v_2) f ...) k_1 ...)
         "handle3")
    (--> (return ((ret v_3) (hnd3 v_1 v_2) f ...) k_1 ...)
-        (return v_1 ((ret unit)) (f ...) k_1 ...)
+        (return v_1 (hdl v_2 v_3) (f ...) k_1 ...)
         "handle4")
    ))
 
