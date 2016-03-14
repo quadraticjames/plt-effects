@@ -15,7 +15,10 @@
   (k (f ...))
   (f (ret v)
      (arg e r)
-     (fun v))
+     (fun v)
+     (hnd1 e e r)
+     (hnd2 v e r)
+     (hnd3 v v))
   (s (control e r k_0 k_1 ...)
      (return k_0 k_1 ...)
      (halt v)))
@@ -94,6 +97,18 @@ should reduce to
 should reduce to
 (return ((ret unit)))
    |#
+   (--> (control (handle e_1 e_2 e_3) r (f ...) k_1 ...)
+        (control e_1 r ((hnd1 e_2 e_3 r) f ...) k_1 ...)
+        "handle1")
+   (--> (return ((ret v) (hnd1 e_2 e_3 r) f ...) k_1 ...)
+        (control e_2 r ((hnd2 v e_3 r) f ...) k_1 ...)
+        "handle2")
+   (--> (return ((ret v_2) (hnd2 v_1 e_3 r) f ...) k_1 ...)
+        (control e_3 r ((hnd3 v_1 v_2) f ...) k_1 ...)
+        "handle3")
+   (--> (return ((ret v_3) (hnd3 v_1 v_2) f ...) k_1 ...)
+        (return v_1 ((ret unit)) (f ...) k_1 ...)
+        "handle4")
    ))
 
 (define-metafunction Ev
