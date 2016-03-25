@@ -4,6 +4,33 @@
 \usepackage[margin=25mm]{geometry}  % adjusts page layout
 \usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
 \usepackage{verbatim}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{courier}
+
+\definecolor{myblue}{rgb}{0,0.05,0.75}
+
+\lstset{,
+aboveskip=20pt,
+backgroundcolor = \color{white},
+basicstyle = \footnotesize\ttfamily,
+belowskip=10pt,
+breakatwhitespace=false,
+breaklines=false,
+captionpos=b,
+commentstyle = \color{myblue},
+extendedchars=true,
+frame=single,
+keepspaces=true,
+language=Tex,
+mathescape,
+numbers=left,
+numbersep=5pt,
+numberstyle=\tiny\color{myblue},
+stepnumber=1,
+xleftmargin=.2\textwidth,
+xrightmargin=.2\textwidth
+}
 
 \raggedbottom                           % try to avoid widows and orphans
 \sloppy
@@ -103,7 +130,59 @@ The syntax and semantics for algebraic effects have been designed and implemente
 
 \chapter{Preparation}
 
+\section{PLT Redex}
 
+For the formalisation I chose to use PLT Redex, which is a language embedded in Racket that is designed for specifying and testing operational semantics. The structure of a PLT Redex program can include:
+
+\begin{itemize}
+\item the specification of the language whose semantics are being described (the syntax);
+\item a reduction relation on the language (the semantics);
+\item unit tests for regression testing; and
+\item the type system for the language.
+\end{itemize}
+
+I familiarised myself with PLT Redex through the Racket tutorial\footnote{http://docs.racket-lang.org/redex/tutorial.html}, on which the following demonstration is based. The tutorial implements a model of the $\lambda$-calculus with an additional 'amb' operator. This introduced the main concepts of the language that I would later use to formalise algebraic effects.
+
+\begin{lstlisting}[caption=Defining a language in PLT Redex,label={lst:redex1}]
+(define-language L
+  (e (e e)         %application
+      ($\lambda$ x e)      %lambda function
+      x            %variable
+      (amb e ...)) %amb operator
+  (x variable-not-otherwise-mentioned))
+\end{lstlisting}
+
+A language is described by a set of non-terminals and expressions that match these non-terminals. In Listing \ref{lst:redex1} the non-terminals are \texttt{e} and \texttt{x}.
+
+In order to write a reduction relation, it is idiomatic to write a small extension to the language that not only defines what it means for an expression in the language to be a program, but also defines the evalation context.
+
+\begin{lstlisting}[caption=An extended language based on L,label={lst:redex2}]
+(define-extended-language Ext L
+  (p (e ...))
+  (P (e ... E e ...)
+  (E (v E)
+     (E e)
+     hole)
+  (v ($\lambda$ x e))
+\end{lstlisting}
+
+In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a program, is matched to a (possibly zero-length) list of \texttt{e}. The non-terminal \texttt{E} represents an evaluation context, and is matched to the special symbol \texttt{hole} in order to identify it as such. In order that a function is evaluated before its argument, \texttt{E} is matched to the expression \texttt{(v E)}, rather than to \texttt{(e E)}.
+
+\begin{lstlisting}[caption=Defining a reduction relation in PLT Redex,label={lst:redex3}]
+(define red
+  (reduction-relation
+   Ext
+  #:domain p
+   (--> (in-hole P (($\lambda$ (x t) e) v))
+        (in-hole P (subst x v e))
+        "application")
+   (--> (e_1 ... (in-hole E (amb t e_2 ...)) 
+          e_3 ...)
+        (e_1 ... (in-hole E e_2) ... e_3 ...)
+        "amb")))
+\end{lstlisting}
+
+The reduction relation is defined in Listing \ref{lst:redex3}. The first rule, \texttt{"application"}, uses a separately-defined metafunction \texttt{subst} to reduce a function application to the expression within the function, with the bound variable being substituted by the value of the argument. The second rule, \texttt{"amb"} defines the semantics of amb.
 
 \chapter{Implementation}
 
