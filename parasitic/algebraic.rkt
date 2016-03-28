@@ -6,10 +6,14 @@
      v
      (e e)
      (λ x e)
-     (handle e e e))
+     (handle e e e)
+     (perform e)
+     (fst (e \, e))
+     (snd (e \, e)))
   (v unit
      (λ x e r)
-     k)
+     k
+     (v \, v))
   (x variable-not-otherwise-mentioned)
   (r (ρ (x v) ...))
   (k (f ...))
@@ -90,11 +94,11 @@ should reduce to
 should reduce to
 (halt unit)
    |#
-   (--> (return ((ret v)) ((hdl v_hval v_heff) f ...) k_2 ...)
-        (return ((ret v) (fun v_hval) f ...) k_2 ...)
+   (--> (return ((ret v)) ((hdl v_hval v_heff) f ...) k_1 ...)
+        (return ((ret v) (fun v_hval) f ...) k_1 ...)
         "handleHalt")
-   (--> (return ((ret v)) (f ...) k_2 ...)
-        (return ((ret v) f ...) k_2 ...)
+   (--> (return ((ret v)) (f ...) k_1 ...)
+        (return ((ret v) f ...) k_1 ...)
         "parasiteHalt")
    #|
 (return ((ret unit)) ((ret unit)))
@@ -111,8 +115,18 @@ should reduce to
         (control e_3 r ((hnd3 v_1 v_2) f ...) k_1 ...)
         "handle3")
    (--> (return ((ret v_3) (hnd3 v_1 v_2) f ...) k_1 ...)
-        (return v_1 (hdl v_2 v_3) (f ...) k_1 ...)
+        (return v_1 ((hdl v_2 v_3) f ...) k_1 ...)
         "handle4")
+   (--> (control (perform v) r k_0 ((hdl v_hval v_heff) f ...) k_1 ...)
+        (return ((ret (v \, k_0)) (fun v_heff) f ...) k_1 ...)
+        "perform")
+
+   (--> (control (fst (e_1 \, e_2)) r k_0 k_1 ...)
+        (control e_1 r k_0 k_1 ...)
+        "first")
+   (--> (control (snd (e_1 \, e_2)) r k_0 k_1 ...)
+        (control e_2 r k_0 k_1 ...)
+        "second")
    ))
 
 (define-metafunction Ev
