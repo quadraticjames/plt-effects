@@ -182,9 +182,43 @@ In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a prog
         "amb")))
 \end{lstlisting}
 
-The reduction relation is defined in Listing \ref{lst:redex3}. The first rule, \texttt{"application"}, uses a separately-defined metafunction \texttt{subst} to reduce a function application to the expression within the function, with the bound variable being substituted by the value of the argument. The second rule, \texttt{"amb"} defines the semantics of amb.
+The reduction relation is defined in Listing \ref{lst:redex3}. The first rule, \texttt{"application"}, uses a separately-defined metafunction \texttt{subst} to reduce a function application to the expression within the function, with the bound variable being substituted by the value of the argument. The second rule, \texttt{"amb"}, defines the semantics of amb.
 
 \chapter{Implementation}
+
+\section{Parasitic threads}
+Parasitic threads are a system for implementing multi-thread behaviour inside a single processor thread. The processor thread maintains a list of parasitic threads, and a list of channels. Each parasitic thread is made up of one or more parasites. These are similar to subroutines on a call stack. The parasite on top is the one that is being executed. Execution may include: 
+
+\begin{itemize}
+\item spawning a parasite, which creates a new parasite that is put on top of the stack; 
+\item sending a value into a channel;
+\item receiving a value from a channel; and 
+\item terminating, which removes the parasite from the stack without returning a value to the parasite beneath it.
+\end{itemize}
+
+The scheduling of threads is handled implicitly by the system, which is free to pre-empt a thread at any time.  Threads may synchronise exclusively through sending values into channels, which are the only way through which two threads can communicate. Channels are non-buffering, that is, execution of a sender is blocked until another parasite tries to receive from the same channel.
+
+A parasite can be in one of three states: 'control', 'return', and 'halt'. A parasite in the control state is in the process of evaluating an expression. When the expression has been reduced to a value, a \texttt{ret v} frame is pushed on to the stack, and the parasite is moved to the return state. The halt state signifies that execution of the entire thread has finished.
+
+The full semantics of parasitic threads are presented by Sivaramakrishnan, et al., in MultiMLton: A multicore-aware runtime for standard ML.\footnote{SIVARAMAKRISHNAN, K., ZIAREK, L. and JAGANNATHAN, S. (2014). MultiMLton: A multicore-aware runtime for standard ML. J. Funct. Prog., 24(06), pp.613-674.}
+
+\section{Algebraic effects}
+
+The system of algebraic effects is based on parasitic threads. The key distinction is that scheduling is now handled explicitly by the program that is being executed. The execution occurs entirely within a single thread, which is made up of a fibre stack -- analogous to the parasite stack of parasitic threads. Each fibre is also made up of a stack of frames. Another difference is that when a fibre terminates, \textit{i.e.}, the fibre is in the return state and the only frame on the frame stack is a \texttt{ret v} frame, the value \texttt{v} \textbf{is} returned to the fibre beneath it on the fibre stack.
+
+The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(fibre, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}.
+
+\begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
+  match g() with:
+    | v            => h_val(v)
+    | effect(k, v) => h_eff(k, v)
+\end{lstlisting}
+
+\section{whatever}
+
+Since the semantics of algebraic effects are similar to and based on the semantics of parasitic threads, and the semantics of parasitic threads were already given in that paper, I decided to implement these semantics first, and then modify the result to fit the semantics of algebraic effects.
+
+
 
 \chapter{Evaluation}
 
