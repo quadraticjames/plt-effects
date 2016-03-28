@@ -206,13 +206,17 @@ The full semantics of parasitic threads are presented by Sivaramakrishnan, et al
 
 The system of algebraic effects is based on parasitic threads. The key distinction is that scheduling is now handled explicitly by the program that is being executed. The execution occurs entirely within a single thread, which is made up of a fibre stack -- analogous to the parasite stack of parasitic threads. Each fibre is also made up of a stack of frames. Another difference is that when a fibre terminates, \textit{i.e.}, the fibre is in the return state and the only frame on the frame stack is a \texttt{ret v} frame, the value \texttt{v} \textbf{is} returned to the fibre beneath it on the fibre stack.
 
-The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(fibre, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}.
+The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(fibre, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}, where \texttt{g()} is equivalent to the computation done by \texttt{fibre}.
 
 \begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
   match g() with:
     | v            => h_val(v)
     | effect(k, v) => h_eff(k, v)
 \end{lstlisting}
+
+The expression \texttt{effect(k,v)} represents a continuation, where \texttt{k} is the rest of the evaluation of \texttt{g()} and \texttt{v} is an extra argument passed to \texttt(h\_eff). It can be returned only when \texttt{g()} evaluates the subexpression \texttt{perform(v)}, which is the second new expression.
+
+The way this is implemented in terms of fibres is as follows: when the fibre \texttt{f} evaluates the expression \texttt{handle(g, h\_eff, h\_val)}, two fibres are pushed to the stack. The first fibre represents \texttt{(h\_eff, h\_val)} and the second represents \texttt{g}.
 
 \section{whatever}
 
