@@ -159,11 +159,11 @@ In order to write a reduction relation, it is idiomatic to write a small extensi
 \begin{lstlisting}[caption=An extended language based on L,label={lst:redex2}]
 (define-extended-language Ext L
   (p (e ...))
-  (P (e ... E e ...)
+  (P (e ... E e ...))
   (E (v E)
      (E e)
      hole)
-  (v ($\lambda$ x e))
+  (v ($\lambda$ x e)))
 \end{lstlisting}
 
 In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a program, is matched to a (possibly zero-length) list of \texttt{e}. The non-terminal \texttt{E} represents an evaluation context, and is matched to the special symbol \texttt{hole} in order to identify it as such. In order that a function is evaluated before its argument, \texttt{E} is matched to the expression \texttt{(v E)}, rather than to \texttt{(e E)}.
