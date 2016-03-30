@@ -9,9 +9,8 @@
 \usepackage{courier}
 \usepackage{tikz}
 \usepackage{float}
-\floatstyle{plain} 
+\floatstyle{plain}
 \restylefloat{figure}
-
 \usetikzlibrary{decorations.pathreplacing}
 
 \definecolor{myblue}{rgb}{0,0.05,0.75}
@@ -212,6 +211,7 @@ The system of algebraic effects is based on parasitic threads. The key distincti
 
 The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(g, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}, where \texttt{g} is a fibre, and \texttt{g()} represents the result of the computation done by the fibre.
 
+
 \begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
   match g() with:
     | v            => h_val(v)
@@ -220,19 +220,12 @@ The explicit scheduling involves the addition of two new forms of expression to 
 
 The expression \texttt{effect(k,v)} represents a continuation, where \texttt{k} is the rest of the evaluation of \texttt{g()} and \texttt{v} is an extra argument passed to \texttt{h\_eff}. It can be returned only when \texttt{g()} evaluates the subexpression \texttt{perform(v)}, which is the second new expression.
 
-The way this is implemented in terms of fibres is as follows: when the fibre \texttt{f} evaluates the expression \texttt{handle(g, h\_eff, h\_val)}, two fibres are pushed to the stack. The first fibre represents \texttt{(h\_eff, h\_val)} and the second represents \texttt{g}. Since the fibre \texttt{g} is now on top of the fibre stack, it is the fibre that is executed. If the fibre eventually terminates, the result is returned \ref{fig:lmao}
+The way this is implemented in terms of fibres is as follows: when the fibre \texttt{f} evaluates the expression \texttt{handle(g, h\_eff, h\_val)}, two fibres are pushed to the stack. The first fibre represents \texttt{(h\_eff, h\_val)} and the second represents \texttt{g}. Since the fibre \texttt{g} is now on top of the fibre stack, it is the fibre that is executed. If the fibre eventually terminates, the result is returned. \ref{fig:lmao}
 
 \begin{figure}
 \centering
 \caption{lol}
 \label{fig:lmao}
-\begin{tikzpicture}
-\draw (0,0) rectangle (1,-1);
-\draw (0,-1) rectangle (1,-2);
-\draw (0,-2) rectangle (1,-3);
-\draw (
-\draw[decorate,decoration={brace,amplitude=4pt,mirror},xshift=-4pt,yshift=0pt] (0,0) -- (0,-1) node[black,midway,xshift=-0.6cm]{\footnotesize \texttt{g}};
-\end{tikzpicture}
 \end{figure}
 
 \chapter{Implementation}
