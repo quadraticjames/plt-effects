@@ -97,6 +97,19 @@ should reduce to
    (--> ((control (letrec x v e) (ρ (x_0 v_0) ...) (f ...) k ...) m)
         ((control e (ρ (x_0 v_0) ... (x v)) (f ...) k ...) m)
         "letrec")
+   (--> ((control (ref x e) r (f ...) k ...) m)
+        ((control e r ((rfr x) f ...) k ...) m)
+        "ref1")
+   (--> ((return ((ret v) (rfr x) f ...) k ...) ((x_0 v_0) ...))
+        ((return ((ret unit) f ...) k ...) ((x_0 v_0) ... (x v)))
+        (side-condition (not (ref-exists ((x_0 v_0) ...) x)))
+        "refnew")
+   (--> ((return ((ret v) (rfr x) f ...) k ...) ((x_left v_left) ... (x v_old) (x_right v_right) ...))
+        ((return ((ret unit) f ...) k ...) ((x_left v_left) ... (x v) (x_right v_right) ...))
+        "refupdate")
+   (--> ((control (deref x) r (f ...) k ...) ((x_left v_left) ... (x v) (x_right v_right) ...))
+        ((return ((ret v) f ...) k ...) ((x_left v_left) ... (x v) (x_right v_right) ...))
+        "deref")
    (--> ((return ((ret v) (arg e r) f ...) k ...) m)
         ((control e r ((fun v) f ...) k ...) m)
         "argument")
@@ -174,3 +187,10 @@ should reduce to
    v]
   [(var-lookup (ρ (x_0 v_0) (x_1 v_1) ...) x)
    (var-lookup (ρ (x_1 v_1) ...) x)])
+
+(define-metafunction Ev
+  ref-exists : m x -> boolean
+  [(ref-exists ((x v) (x_1 v_1) ...) x) true]
+  [(ref-exists () x) false]
+  [(ref-exists ((x_0 v_0) (x_1 v_1) ...) x)
+   (ref-exists ((x_1 v_1) ...) x)])
