@@ -6,7 +6,7 @@
      v
      (e e)
      (λ x e)
-     (letrec e in e)
+     (letrec x v e)
      (handle e e e)
      (perform e)
      (continue e e)
@@ -92,7 +92,7 @@ should reduce to
         (side-condition (not (equal? (term string_1) (term string_2))))
         "iffalse")
    (--> (control (letrec x v e) (ρ (x_0 v_0) ...) (f ...) k ...)
-        (control e_2 (ρ (x_0 v_0) ... (x v)) (f ...) k ...)
+        (control e (ρ (x_0 v_0) ... (x v)) (f ...) k ...)
         "letrec")
    (--> (return ((ret v) (arg e r) f ...) k ...)
         (control e r ((fun v) f ...) k ...)
