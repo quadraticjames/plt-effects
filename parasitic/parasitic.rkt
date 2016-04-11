@@ -5,7 +5,9 @@
   (e x
      v
      (e e)
-     (λ x e))
+     (λ x e)
+     (spawn e)
+     (attach k)
   (v unit
      (λ x e r)
      κ
@@ -21,10 +23,7 @@
      (halt v)))
 
 (define-extended-language Ev Pt
-  (p s)
-  (P S)
-  (S s
-     hole))
+  (p s))
 
 (define red
   (reduction-relation
@@ -78,6 +77,12 @@ should reduce to
 should reduce to
 (control x (ρ (x unit)) ())
    |#
+   (--> (control (spawn e) r (f ...) k ...)
+        (control e r () ((ret unit) f ...) k ...)
+        "spawnParasite")
+   (--> (control (attach k_new) r (f ...) k ...)
+        (return k_new ((ret unit) f ...) k ...)
+        "attachParasite")
    (--> (return ((ret v)))
         (halt v)
         "threadHalt")

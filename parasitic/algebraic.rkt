@@ -38,7 +38,6 @@
      (if2 v e e r)
      (rfr x)
      (seq e r)
-     (let x e r)
      (fir)
      (sec)
      (pair1 e r)
@@ -103,9 +102,14 @@ should reduce to
         ((control e_4 r (f ...) k ...) m)
         (side-condition (not (equal? (term v_1) (term v_2))))
         "iffalse")
-   (--> ((control (letrec x e_1 e_2) r (f ...) k ...) m)
-        ((control ((λ x e_2) e_1) r (f ...) k ...) m)
+   (--> ((control (letrec x e_1 e_2) (ρ (x_0 v_0) ...) (f ...) k ...) m)
+        ((control ((ref x e_1) \; e_2) (ρ (x (λ x_x ((deref x) x_x) (ρ (x_0 v_0) ...))) (x_0 v_0) ...) (f ...) k ...) m)
         "letrec")
+   #|
+   (--> ((control (letrec x e_1 e_2) r (f ...) k ...) m)
+        ((control ((λ x e_2) ((λ x_f ((λ x (x_f (x x))) (λ x (x_f (x x))))) (λ x e_1))) r (f ...) k ...) m)
+        "letrec")
+|#
    (--> ((control (ref x e) r (f ...) k ...) m)
         ((control e r ((rfr x) f ...) k ...) m)
         "ref1")
@@ -128,7 +132,7 @@ should reduce to
 (control unit (ρ) ((fun (λ x x (ρ)))))
    |#
    (--> ((return ((ret v) (fun (λ x e (ρ (x_0 v_0) ...))) f ...) k ...) m)
-        ((control e (ρ (x_0 v_0) ... (x v)) (f ...) k ...) m)
+        ((control e (ρ (x v) (x_0 v_0) ...) (f ...) k ...) m)
         "function")
    #|
 (return ((ret unit) (fun (λ x x (ρ)))))
@@ -269,9 +273,9 @@ should reduce to
         (((deref enq) (snd x)) \; (spawn (snd (fst x)))))))) 
   (spawn ((ret unit) (fun (λ x (perform ("Yield" \, unit)) (ρ))))))))) (ρ) ()) ())))
 |#
-#|
-(traces red (term ((control ((ref q unit) \;
-((ref deq (λ x (if (deref q) unit unit (continue ((ref tmp (fst (deref q))) \; ((ref q (snd (deref q))) \; (deref tmp))) unit)))) \;
+
+(apply-reduction-relation* red (term ((control ((ref q unit) \;
+((ref deq (λ x unit)) \;
 ((ref enq (λ x (ref q (x \, (deref q))))) \;
 
 (letrec 
@@ -285,4 +289,3 @@ should reduce to
         (((deref enq) (snd x)) \; ((deref deq) unit)) 
         (((deref enq) (snd x)) \; (spawn (snd (fst x)))))))) 
   (spawn ((ret unit) (fun (λ x (perform ("Fork" \, ((ret unit) (fun (λ x (perform ("Yield" \, unit)) (ρ)))))) (ρ))))))))) (ρ) ()) ())))
-|#

@@ -8,10 +8,15 @@
 \usepackage{color}
 \usepackage{courier}
 \usepackage{tikz}
+\usepackage{enumitem}
 \usepackage{float}
 \floatstyle{plain}
 \restylefloat{figure}
-\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{decorations.pathreplacing,shapes,arrows,shadows,decorations.markings}
+\graphicspath{ {images/} }
+\usepackage{natbib}
+\usepackage{latexsym}
+\usepackage{amsmath}
 
 \definecolor{myblue}{rgb}{0,0.05,0.75}
 
@@ -46,8 +51,6 @@ xrightmargin=.2\textwidth
                                         % more readable
 
 \begin{document}
-
-\bibliographystyle{plain}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,20 +130,169 @@ extent for a comparable purpose.
 \section{Algebraic effects}
 
 There exist multicore-capable functional programming languages, such as Haskell, Manticore, F\#, and MultiMLton, whose runtimes provide support for concurrency---the concurrency primitives are baked in to the runtime system. This has the advantage of natively supporting multicore capabilities, but it also means that the runtimes can become burdensomely complicated. OCaml, on the other hand, is not yet multicore-capable and does not have this concurrency support.
-Algebraic effects is a proposed addition to OCaml that would provide this. In contrast to the implementations in the other aforementioned functional programming languages, algebraic effects provide a modular abstraction for expressing effectful computation, which allows programmers to implement independent schedulers and new concurrency primitives as OCaml libraries.
+
+The OCaml Labs team have been working on a multicore OCaml compiler, which includes as a feature algebraic effects. In contrast to the implementations in the other aforementioned functional programming languages, algebraic effects provide a modular abstraction for expressing effectful computation, which allows programmers to implement independent schedulers and new concurrency primitives as OCaml libraries.
 
 \section{Formalisation}
 
+Formalisation langauges exist, which allow another language's semantics to be modelled
+
+\section{Motivation}
+
 The syntax and semantics for algebraic effects have been designed and implemented by OCaml Labs, but the new semantics has not yet been formalised. Formalisation allows for random and exhaustive testing of concurrent schedules, which would allow us to show properties such as determinism or absence of deadlock.
+
+\section{Summary}
+
+The aim for the project was to:
+
+\begin{enumerate}[label=(\alph*)]
+\item formalise the semantics of algebraic effects; and
+\item use this formalisation to be able to test schedulers and programs for desirable properties.
+\end{enumerate}
 
 \chapter{Preparation}
 
-\section{PLT Redex}
+In this chapter I will describe the background theory I investigated in order to understand the problem. In Section \ref{preppara} I explain the principles of parasitic threads; in Section \ref{prepalg} I explain the principles of algebraic effects, and how they relate to parasitic threads; Section \ref{prepplt} onwards cover the tools I used.
 
-For the formalisation I chose to use PLT Redex, which is a language embedded in Racket that is designed for specifying and testing operational semantics. The structure of a PLT Redex program can include:
+\section{Parasitic threads}\label{preppara}
+Parasitic threads are a system for implementing multi-thread behaviour inside a single processor thread. The processor thread maintains a list of parasitic threads, and a list of channels. Each parasitic thread is made up of a parasite stack, which is similar to subroutines on a call stack. The parasite on top is the one that is being executed. Execution may include: 
 
 \begin{itemize}
-\item the specification of the language whose semantics are being described (the syntax);
+\item spawning a parasite, which creates a new parasite that is put on top of the stack; 
+\item attaching a continuation, which creates a parasite to evaluate the continuation;
+\item sending a value into a channel;
+\item receiving a value from a channel; and 
+\item terminating, which removes the parasite from the stack \textit{without} returning a value to the parasite beneath it.
+\end{itemize}
+
+The scheduling of threads is handled implicitly by the system, which is free to pre-empt a thread at any time.  Threads may synchronise exclusively through sending values into channels. Channels are non-buffering, \textit{i.e.}, execution of a sender is blocked until another parasite tries to receive from the same channel.
+
+\section{Algebraic effects}\label{prepalg}
+
+The system of algebraic effects is based on parasitic threads. The key distinction is that scheduling is now handled explicitly by the program that is being executed. The execution occurs entirely within a single thread, which is made up of a fibre stack -- analogous to the parasite stack of parasitic threads. Each fibre is also made up of a stack of frames. Another difference is that when a fibre terminates the value of the expression \textbf{is} returned to the fibre beneath it on the fibre stack.
+
+The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(g, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}, where \texttt{g} is a fibre, and \texttt{g()} represents the result of the computation done by the fibre.
+
+
+\begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
+  match g() with:
+    | v            => h_val(v)
+    | effect(k, v) => h_eff(k, v)
+\end{lstlisting}
+
+The expression \texttt{effect(k,v)} represents a continuation, where \texttt{k} is the rest of the evaluation of \texttt{g()} and \texttt{v} is an extra argument passed to \texttt{h\_eff}. It can be returned only when \texttt{g()} evaluates the subexpression \texttt{perform(v)}, which is the second new expression.
+
+The way this is implemented in terms of fibres is as follows: when the fibre \texttt{f} evaluates the expression \texttt{handle(g, h\_eff, h\_val)}, two fibres are pushed to the stack. The first fibre represents \texttt{(h\_eff, h\_val)} and the second represents \texttt{g}. Since the fibre \texttt{g} is now on top of the fibre stack, it is the fibre that is executed. If and when the fibre eventually terminates, the result is returned.
+
+\section{CEK machines}\label{prepcek}
+
+A CEK machine is a mechanical model for semantics. It is made up of a control component (C), an environment component (E), and a continuation component (K). The control component represents the current state of execution. I will use three states:
+
+\begin{itemize}
+\item the \textbf{control($e$)} state, which means that the expression $e$ is currently being evaluated;
+\item the \textbf{return} state, which means that a \texttt{ret} frame has been pushed onto the continuation stack, and the continuation should now be executed; and
+\item the \textbf{halt($v$)} state, which means that the machine's execution has concluded and the value $v$ is returned.
+\end{itemize}
+
+The environment component is a function from variable names to values. The continuation component is a stack of frames which represent the remainder of the computation.
+
+\begin{figure}
+\centering
+\caption{Evaluation of the expression (($\lambda$ x x) unit) in a language encoded in a CEK machine}
+\label{fig:parasem}
+\tikzstyle{frame}=[draw, fill=blue!10, text width=7em, text centered, minimum height=2em, minimum width=5em]
+\tikzstyle{thread}=[draw, fill=blue!25,minimum height=3em, minimum width=5em, text centered]
+\tikzstyle{state}=[text width=4em, text centered,font=\bf]
+\tikzstyle{vtranlabel}=[right=0.5em,font=\tt]
+\tikzstyle{vtranarrow}=[line width = 1.2pt]
+\begin{tikzpicture}[remember picture]
+
+\draw(0,0) node[thread](A){
+
+\begin{tikzpicture}
+\draw (0,-0) node[state,text width=8em]{control\\(($\lambda$ x x) unit)\\\{\}};
+\end{tikzpicture}
+
+};
+
+\draw(0,-3) node[thread](B){
+\begin{tikzpicture}
+\draw (0,0) node[frame]{arg(unit,\{\})};
+\draw (-2.5,0) node[state]{control\\($\lambda$ x x)\\\{\}};
+\end{tikzpicture}
+};
+
+\draw(0,-6) node[thread](C){
+\begin{tikzpicture}
+\draw(0,0) node[frame]{ret($\lambda$ x x \{\})};
+\draw (0,-0.9) node[frame]{arg(unit,\{\})};
+\draw (-2.5,-0.45) node[state]{return};
+\end{tikzpicture}
+};
+
+\draw(0,-9) node[thread](D){
+\begin{tikzpicture}
+\draw (0,0) node[frame]{fun(($\lambda$ x x \{\}))};
+\draw (-2.5,0) node[state]{control\\unit\\\{\}};
+\end{tikzpicture}
+};
+
+
+\draw(0,-12) node[thread](E){
+\begin{tikzpicture}
+\draw(0,0) node[frame]{ret(unit)};
+\draw (0,-0.9) node[frame]{fun(($\lambda$ x x\{\}))};
+\draw (-2.5,-0.45) node[state]{return};
+\end{tikzpicture}
+};
+
+\draw(0,-15) node[thread](F){
+\begin{tikzpicture}
+\draw (0,-0) node[state,text width=8em]{control\\x\\\{x : unit\}};
+\end{tikzpicture}
+};
+
+\draw(0,-18) node[thread](G){
+\begin{tikzpicture}
+\draw(0,0) node[frame]{ret(unit)};
+\draw (-2.5,-0) node[state]{return};
+\end{tikzpicture}
+};
+
+\draw(0,-20.5) node[thread](H){
+\begin{tikzpicture}
+\draw (0,-0) node[state,text width=8em]{halt\\unit};
+\end{tikzpicture}
+};
+
+\draw[->,vtranarrow] (A) to node[vtranlabel]{application} (B);
+\draw[->,vtranarrow] (B) to node[vtranlabel]{closure} (C);
+\draw[->,vtranarrow] (C) to node[vtranlabel]{argument} (D);
+\draw[->,vtranarrow] (D) to node[vtranlabel]{value} (E);
+\draw[->,vtranarrow] (E) to node[vtranlabel]{function} (F);
+\draw[->,vtranarrow] (F) to node[vtranlabel]{variable} (G);
+\draw[->,vtranarrow] (G) to node[vtranlabel]{threadHalt} (H);
+
+\end{tikzpicture}
+\end{figure}
+
+Figure \ref{fig:parasem} depicts the execution of a simple program, which evaluates (($\lambda$ x x) unit). This example demonstrates various categories of reduction rules:
+
+\begin{itemize}
+\item Rules like \texttt{application} divide a compound expression like \texttt{(e\_1 e\_2)} into its subexpressions, transitioning to a state where one of the subexpressions, \texttt{e\_1} is the expression being evaluated, and the remainder is pushed onto the frame stack, in this case in an \texttt{arg} frame.
+\item Rules like \texttt{value} and \texttt{variable} complete an expression's evaluation by transitioning into a return state and pushing a \texttt{ret} frame onto the frame stack.
+\item Rules like \texttt{argument} and \texttt{function} combine the top two frames on the frame stack while in the return state.
+\item The rule \texttt{threadHalt} finishes execution by transitioning from a return state where there is a single \texttt{ret} frame on the frame stack to the halt state.
+\end{itemize}
+
+The full semantics of parasitic threads encoded as a CEK machine are presented by Sivaramakrishnan, et al., in MultiMLton: A multicore-aware runtime for standard ML.\cite{Siv2014}
+
+\section{PLT Redex}\label{prepplt}
+
+For the formalisation I chose to use PLT Redex, which is a language embedded in Racket that is designed for specifying and testing operational semantics. A PLT Redex program can be used to specify, among other things:
+
+\begin{itemize}
+\item the language whose semantics are being described (the syntax);
 \item a reduction relation on the language (the semantics);
 \item unit tests for regression testing; and
 \item the type system for the language.
@@ -178,10 +330,10 @@ In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a prog
   (reduction-relation
    Ext
   #:domain p
-   (--> (in-hole P (($\lambda$ (x t) e) v))
+   (--> (in-hole P (($\lambda$ x e) v))
         (in-hole P (subst x v e))
         "application")
-   (--> (e_1 ... (in-hole E (amb t e_2 ...)) 
+   (--> (e_1 ... (in-hole E (amb e_2 ...)) 
           e_3 ...)
         (e_1 ... (in-hole E e_2) ... e_3 ...)
         "amb")))
@@ -189,56 +341,94 @@ In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a prog
 
 The reduction relation is defined in Listing \ref{lst:redex3}. The first rule, \texttt{"application"}, uses a separately-defined metafunction \texttt{subst} to reduce a function application to the expression within the function, with the bound variable being substituted by the value of the argument. The second rule, \texttt{"amb"}, defines the semantics of amb.
 
-\section{Parasitic threads}
-Parasitic threads are a system for implementing multi-thread behaviour inside a single processor thread. The processor thread maintains a list of parasitic threads, and a list of channels. Each parasitic thread is made up of one or more parasites. These are similar to subroutines on a call stack. The parasite on top is the one that is being executed. Execution may include: 
+The use of PLT Redex goes beyond merely specifying a language, however. The reduction relation can then be applied on an expression in the language in order to execute the semantics.
 
-\begin{itemize}
-\item spawning a parasite, which creates a new parasite that is put on top of the stack; 
-\item sending a value into a channel;
-\item receiving a value from a channel; and 
-\item terminating, which removes the parasite from the stack without returning a value to the parasite beneath it.
-\end{itemize}
-
-The scheduling of threads is handled implicitly by the system, which is free to pre-empt a thread at any time.  Threads may synchronise exclusively through sending values into channels, which are the only way through which two threads can communicate. Channels are non-buffering, that is, execution of a sender is blocked until another parasite tries to receive from the same channel.
-
-A parasite can be in one of three states: 'control', 'return', and 'halt'. A parasite in the control state is in the process of evaluating an expression. When the expression has been reduced to a value, a \texttt{ret v} frame is pushed on to the stack, and the parasite is moved to the return state. The halt state signifies that execution of the entire thread has finished.
-
-The full semantics of parasitic threads are presented by Sivaramakrishnan, et al., in MultiMLton: A multicore-aware runtime for standard ML.\footnote{SIVARAMAKRISHNAN, K., ZIAREK, L. and JAGANNATHAN, S. (2014). MultiMLton: A multicore-aware runtime for standard ML. J. Funct. Prog., 24(06), pp.613-674.}
-
-\section{Algebraic effects}
-
-The system of algebraic effects is based on parasitic threads. The key distinction is that scheduling is now handled explicitly by the program that is being executed. The execution occurs entirely within a single thread, which is made up of a fibre stack -- analogous to the parasite stack of parasitic threads. Each fibre is also made up of a stack of frames. Another difference is that when a fibre terminates, \textit{i.e.}, the fibre is in the return state and the only frame on the frame stack is a \texttt{ret v} frame, the value \texttt{v} \textbf{is} returned to the fibre beneath it on the fibre stack.
-
-The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(g, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}, where \texttt{g} is a fibre, and \texttt{g()} represents the result of the computation done by the fibre.
-
-
-\begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
-  match g() with:
-    | v            => h_val(v)
-    | effect(k, v) => h_eff(k, v)
+\begin{lstlisting}[caption=Applying the reduction relation with transitiv closure,label={lst:redexample1}]
+> (apply-reduction-relation* red (term
+      ((($\lambda$ x (amb x x)) ($\lambda$ x x)))))
+'((($\lambda$ x x) ($\lambda$ x x)))
 \end{lstlisting}
 
-The expression \texttt{effect(k,v)} represents a continuation, where \texttt{k} is the rest of the evaluation of \texttt{g()} and \texttt{v} is an extra argument passed to \texttt{h\_eff}. It can be returned only when \texttt{g()} evaluates the subexpression \texttt{perform(v)}, which is the second new expression.
-
-The way this is implemented in terms of fibres is as follows: when the fibre \texttt{f} evaluates the expression \texttt{handle(g, h\_eff, h\_val)}, two fibres are pushed to the stack. The first fibre represents \texttt{(h\_eff, h\_val)} and the second represents \texttt{g}. Since the fibre \texttt{g} is now on top of the fibre stack, it is the fibre that is executed. If the fibre eventually terminates, the result is returned. \ref{fig:lmao}
+Listing \ref{lst:redexample1} depicts use of PLT Redex's command line interface. The function \texttt{apply-reduction-relation*} applies the transitive closure of the reduction relation, \textit{i.e.} it repeatedly applies the reduction relation \texttt{red} until the expression does not reduce further. Since reduction relations may be non-deterministic, it returns a list of all irreducible expressions found in the reduction tree.
 
 \begin{figure}
 \centering
-\caption{lol}
-\label{fig:lmao}
+\caption{PLT Redex's \texttt{traces} function}
+\label{fig:traces_example}
+\includegraphics[scale=0.75]{traces_example}
 \end{figure}
+
+The function \texttt{apply-reduction-relation*} can also be called with the option \texttt{all?} in order to include the entire set of terms, rather than just the irreducible terms. PLT Redex also offers the \texttt{traces} function, which graphically represents the reduction tree. For example, the graph in Figure \ref{fig:traces_example} shows the terms in the reduction tree for the term used in Listing \ref{lst:redexample1} as well as the names of the rules by which the subsequent terms were derived.
+
+\section{Tools used}
+
+I wrote the Racket code in DrRacket, a graphical development environment. This has a command line interface which allowed me to query the languages once they had been compiled. I used Git for source control for the code and the written artifacts, and regularly pushed to a Github repository for backup purposes.
 
 \chapter{Implementation}
 
-\section{whatever}
+\section{Parasitic threads}
 
-Since the semantics of algebraic effects are similar to and based on the semantics of parasitic threads, and the semantics of parasitic threads were already given in that paper, I decided to implement these semantics first, and then modify the result to fit the semantics of algebraic effects.
+I started by implementing the semantics of parasitic threads. Since the semantics of algebraic effects are similar to and based on the semantics of parasitic threads, and the semantics of parasitic threads were already well-defined,\cite{Siv2014} this provided an easier path to the algebraic effects semantics than starting from scratch. The parasitic thread semantics are more complex than the algebraic effects semantics because they include features like multiple threads and multiple channels along with transition rules that deal with spawning new threads and sending and receiving information through channels. I chose to omit these features from my implementation of parasitic thread semantics in order to avoid wasted effort.
 
+The implementation itself can be found in Appendix XXXXX. The language, \texttt{Pt}, has 7 non-terminals and 10 reduction rules, which is reduced from the 12 non-terminals and 27 rules of the language as originally encoded. Examples of executions of \texttt{Pt} programs are given in Figures \ref{fig:traces_trivial} and \ref{fig:traces_parasite}. 
 
+\begin{figure}
+\centering
+\caption{Evaluating \texttt{(($\lambda$ x x) unit)} in \texttt{Pt}}
+\label{fig:traces_trivial}
+\includegraphics[scale=0.65]{traces_trivial}
+\end{figure}
+
+\begin{figure}
+\centering
+\caption{Evaluating \texttt{(spawn (attach ((ret unit))))} in \texttt{Pt}}
+\label{fig:traces_parasite}
+\includegraphics[scale=0.6]{traces_parasite}
+\end{figure}
+
+During implementation I discovered a mistake in the original semantics. The rule \texttt{closure} had been given as
+$$\langle\lambda x.e, r, k, \overline{k} \rangle \longrightarrow \langle \texttt{ret} \lceil \lambda x.e.r \rceil : k \lhd \overline{k} \rangle$$
+while the expression forms had been given as:
+
+\begin{align} 
+\nonumber e \in Exp &::= v\:  |\:  ... \\
+\nonumber v \in Val &::= unit\:  |\:  (\lambda x.e.r)\:  |\:  c\:  |\:  \kappa \end{align}
+where $r$ is an environment.
+
+This means that $\lambda x.e$ did not match with $e$ so the left-hand side was not valid, which caused Racket to fail to compile the language. My solution was to add the form $\lambda x.e \in e$.
+
+This discovery shows the usefulness of formalisation: the process of formalisation necessarily checked the semantics and led to the discovery of a mistake in a published paper.
+
+\section{Algebraic effects}
+
+The framework I created for the parasitic threads CEK machine provided a basis for the algebraic effects implementation, \texttt{Alg}, which can be found in Appendix YYYYY. The additional features I implemented include:
+
+\begin{itemize}
+\item a global memory which can be assigned to and dereferenced with corresponding \texttt{ref} and \texttt{deref} expressions;
+\item strings;
+\item an 'if-equivalent' expression;
+\item a \texttt{letrec} expression, which uses the memory for storing defined functions;
+\item a tuple $(e_1, e_2)$, with \texttt{fst} and \texttt{snd} expressions for accessing the first and second element respectively;
+\item a sequencing expression; and
+\item the \texttt{handle}, \texttt{perform}, and \texttt{continue} expressions of algebraic effects.
+\end{itemize}
+
+\texttt{Alg} features 17 frame types, increased from \texttt{Pt}'s 3, and 36 reduction rules.
 
 \chapter{Evaluation}
 
+\section{Unit tests}
+
+
+
+The omission of the thread map led to the semantics making no use of the PLT Redex \texttt{hole} construct. This is normally used to determine the order in which expressions are evaluated, but this is actually made explicit in the parasitic thread semantics.
+
 \chapter{Conclusion}
+
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{unsrt}
+
+\bibliography{ref}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
