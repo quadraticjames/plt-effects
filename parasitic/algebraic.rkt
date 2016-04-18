@@ -34,12 +34,13 @@
      (hdl v v)
      (con1 e r)
      (con2 v)
+     prf
      (if1 e e e r)
      (if2 v e e r)
      (rfr x)
      (seq e r)
-     (fir)
-     (sec)
+     fir
+     sec
      (pair1 e r)
      (pair2 v))
   (s (control e r k_0 k_1 ...)
@@ -105,11 +106,6 @@ should reduce to
    (--> ((control (letrec x e_1 e_2) (ρ (x_0 v_0) ...) (f ...) k ...) m)
         ((control ((ref x e_1) \; e_2) (ρ (x (λ x_x ((deref x) x_x) (ρ (x_0 v_0) ...))) (x_0 v_0) ...) (f ...) k ...) m)
         "letrec")
-   #|
-   (--> ((control (letrec x e_1 e_2) r (f ...) k ...) m)
-        ((control ((λ x e_2) ((λ x_f ((λ x (x_f (x x))) (λ x (x_f (x x))))) (λ x e_1))) r (f ...) k ...) m)
-        "letrec")
-|#
    (--> ((control (ref x e) r (f ...) k ...) m)
         ((control e r ((rfr x) f ...) k ...) m)
         "ref1")
@@ -171,9 +167,12 @@ should reduce to
    (--> ((return ((ret v_3) (hnd3 v_1 v_2) f ...) k_1 ...) m)
         ((return v_1 ((hdl v_2 v_3) f ...) k_1 ...) m)
         "handle4")
-   (--> ((control (perform v) r k_0 ((hdl v_hval v_heff) f ...) k_1 ...) m)
-        ((return ((ret (v \, k_0)) (fun v_heff) (hdl v_hval v_heff) f ...) k_1 ...) m)
-        "perform")
+   (--> ((control (perform e) r (f ...) k ...) m)
+        ((control e r (prf f ...) k ...) m)
+        "perform1")
+   (--> ((return ((ret v) prf f_0 ...) ((hdl v_hval v_heff) f_1 ...) k_1 ...) m)
+        ((return ((ret (v \, (f_0 ...))) (fun v_heff) (hdl v_hval v_heff) f_1 ...) k_1 ...) m)
+        "perform2")
    (--> ((return ((ret v) (hdl v_hval v_heff) f ...) k_1 ...) m)
         ((return ((ret v) f ...) k_1 ...) m)
         "h_effHalt")
@@ -188,15 +187,15 @@ should reduce to
         "continue3")
 
    (--> ((control (fst e) r (f ...) k ...) m)
-        ((control e r ((fir) f ...) k ...) m)
+        ((control e r (fir f ...) k ...) m)
         "first1")
-   (--> ((return ((ret (v_1 \, v_2)) (fir) f ...) k ...) m)
+   (--> ((return ((ret (v_1 \, v_2)) fir f ...) k ...) m)
         ((return ((ret v_1) f ...) k ...) m)
         "first2")
    (--> ((control (snd e) r (f ...) k ...) m)
-        ((control e r ((sec) f ...) k ...) m)
+        ((control e r (sec f ...) k ...) m)
         "second1")
-   (--> ((return ((ret (v_1 \, v_2)) (sec) f ...) k ...) m)
+   (--> ((return ((ret (v_1 \, v_2)) sec f ...) k ...) m)
         ((return ((ret v_2) f ...) k ...) m)
         "second2")
    (--> ((control (e_1 \, e_2) r (f ...) k ...) m)
@@ -235,6 +234,22 @@ should reduce to
   [(starts-with-hdl ((hdl v_1 v_2) f ...)) #t]
   [(starts-with-hdl (f ...)) #f])
 
+(define-metafunction Ev
+  deterministic : p -> boolean
+  [(deterministic p) (match (apply-reduction-relation red (term p))
+                       [() #t]
+                       [(p_next) (term (deterministic p_next))]
+                       [() #f])])
+
+(define (is_deterministic p)
+  (let ([next
+         (apply-reduction-relation red p)])
+    (cond
+      [(empty? next) #t]
+      [(equal? (length next) 1)
+       (andmap is_deterministic next)]
+      [else #f])))
+
 ;(ref q_front unit)
 ;(ref q_rear unit)
 ;(ref enq (λ k (ref q_rear (k (deref q_rear)))))
@@ -256,36 +271,26 @@ should reduce to
         (((deref enq) (snd x)) \; (spawn (snd (fst x)))))))) 
   (spawn ((ret unit))))))) (ρ) ()) ())))
 |#
-#|
-(traces red (term ((control ((ref q unit) \;
-((ref deq (λ x (if (deref q) unit unit (continue ((ref tmp (fst (deref q))) \; ((ref q (snd (deref q))) \; (deref tmp))) unit)))) \;
-((ref enq (λ x (ref q (x \, (deref q))))) \;
 
-(letrec 
-  spawn 
+(traces red (term
+((control ((ref q unit) \;
+((ref deq (λ x (if (deref q) unit unit
+  (continue ((ref tmp (fst (deref q))) \;
+    ((ref q (snd (deref q))) \;
+      (deref tmp))) unit)))) \;
+((ref enq (λ x (ref q (x \, (deref q))))) \;
+((λ prog
+  (letrec spawn 
   (λ f 
     (handle f 
       (λ x ((deref deq) unit)) 
       (λ x 
         (if (fst (fst x)) 
         "Yield" 
-        (((deref enq) (snd x)) \; ((deref deq) unit)) 
-        (((deref enq) (snd x)) \; (spawn (snd (fst x)))))))) 
-  (spawn ((ret unit) (fun (λ x (perform ("Yield" \, unit)) (ρ))))))))) (ρ) ()) ())))
-|#
+        (((deref enq) (snd x)) \;
+            ((deref deq) unit)) 
+        (((deref enq) (snd x)) \;
+            (spawn (snd (fst x))))))))
+  (spawn prog))))))))
+())))
 
-(apply-reduction-relation* red (term ((control ((ref q unit) \;
-((ref deq (λ x unit)) \;
-((ref enq (λ x (ref q (x \, (deref q))))) \;
-
-(letrec 
-  spawn 
-  (λ f 
-    (handle f 
-      (λ x ((deref deq) unit)) 
-      (λ x 
-        (if (fst (fst x)) 
-        "Yield" 
-        (((deref enq) (snd x)) \; ((deref deq) unit)) 
-        (((deref enq) (snd x)) \; (spawn (snd (fst x)))))))) 
-  (spawn ((ret unit) (fun (λ x (perform ("Fork" \, ((ret unit) (fun (λ x (perform ("Yield" \, unit)) (ρ)))))) (ρ))))))))) (ρ) ()) ())))

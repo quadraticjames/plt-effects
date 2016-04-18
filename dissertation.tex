@@ -20,7 +20,7 @@
 
 \definecolor{myblue}{rgb}{0,0.05,0.75}
 
-\lstset{,
+\lstset{
 aboveskip=20pt,
 backgroundcolor = \color{white},
 basicstyle = \footnotesize\ttfamily,
@@ -30,6 +30,8 @@ breaklines=false,
 captionpos=b,
 commentstyle = \color{myblue},
 extendedchars=true,
+float,
+floatplacement=H,
 frame=single,
 keepspaces=true,
 language=Tex,
@@ -135,7 +137,7 @@ The OCaml Labs team have been working on a multicore OCaml compiler, which inclu
 
 \section{Formalisation}
 
-Formalisation langauges exist, which allow another language's semantics to be modelled
+Formalisation langauges exist, which allow another language's semantics to be modelled. The first benefit of this is that when the language description is compiled, this necessarily tests that the language is consistent, \textit{e.g.} that no trivial mistakes such as omitting a particular form of expression have been made. The second and more powerful application of formalisation is that once compiled the semantics can be tested by simulating execution traces and determining whether a particular program has a particular property.
 
 \section{Motivation}
 
@@ -152,7 +154,13 @@ The aim for the project was to:
 
 \chapter{Preparation}
 
-In this chapter I will describe the background theory I investigated in order to understand the problem. In Section \ref{preppara} I explain the principles of parasitic threads; in Section \ref{prepalg} I explain the principles of algebraic effects, and how they relate to parasitic threads; Section \ref{prepplt} onwards cover the tools I used.
+In this chapter I will describe the background theory I investigated in order to understand the problem. In Section \ref{preppara} I explain the principles of parasitic threads; in Section \ref{prepalg} I explain the principles of algebraic effects, and how they relate to parasitic threads; Section \ref{prepcek} onwards cover the formalisation process and the tools I used.
+
+\section{Starting point}\label{prepstart}
+
+My project is very much building on work already undertaken by OCaml Labs. Algebraic effects semantics have been designed and implemented in OCaml by the OCaml Labs team, who have also produced documentation that illustrates the behaviour of algebraic effects and provides examples of schedulers that exploit algebraic effects.
+
+My implementation of algebraic effects as a CEK machine is heavily based on KC Sivaramakrishnan's description of parasitic threads as a CEK machine.\cite{Siv2014}
 
 \section{Parasitic threads}\label{preppara}
 Parasitic threads are a system for implementing multi-thread behaviour inside a single processor thread. The processor thread maintains a list of parasitic threads, and a list of channels. Each parasitic thread is made up of a parasite stack, which is similar to subroutines on a call stack. The parasite on top is the one that is being executed. Execution may include: 
@@ -174,11 +182,11 @@ The system of algebraic effects is based on parasitic threads. The key distincti
 The explicit scheduling involves the addition of two new forms of expression to the language. The semantics of the first, \texttt{handle(g, h\_eff, h\_val)}, are equivalent to that given in Listing \ref{lst:handle}, where \texttt{g} is a fibre, and \texttt{g()} represents the result of the computation done by the fibre.
 
 
-\begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=The semantics of \texttt{handle},label={lst:handle}]
   match g() with:
     | v            => h_val(v)
     | effect(k, v) => h_eff(k, v)
-\end{lstlisting}
+\end{lstlisting} \end{minipage}
 
 The expression \texttt{effect(k,v)} represents a continuation, where \texttt{k} is the rest of the evaluation of \texttt{g()} and \texttt{v} is an extra argument passed to \texttt{h\_eff}. It can be returned only when \texttt{g()} evaluates the subexpression \texttt{perform(v)}, which is the second new expression.
 
@@ -300,20 +308,20 @@ For the formalisation I chose to use PLT Redex, which is a language embedded in 
 
 I familiarised myself with PLT Redex through the Racket tutorial\footnote{http://docs.racket-lang.org/redex/tutorial.html}, on which the following demonstration is based. The tutorial implements a model of the $\lambda$-calculus with an additional 'amb' operator. This introduced the main concepts of the language that I would later use to formalise algebraic effects.
 
-\begin{lstlisting}[caption=Defining a language in PLT Redex,label={lst:redex1}]
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=Defining a language in PLT Redex,label={lst:redex1}]
 (define-language L
   (e (e e)         %application
       ($\lambda$ x e)      %lambda function
       x            %variable
       (amb e ...)) %amb operator
   (x variable-not-otherwise-mentioned))
-\end{lstlisting}
+\end{lstlisting} \end{minipage}
 
 A language is described by a set of non-terminals and expressions that match these non-terminals. In Listing \ref{lst:redex1} the non-terminals are \texttt{e} and \texttt{x}.
 
 In order to write a reduction relation, it is idiomatic to write a small extension to the language that not only defines what it means for an expression in the language to be a program, but also defines the evalation context.
 
-\begin{lstlisting}[caption=An extended language based on L,label={lst:redex2}]
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=An extended language based on L,label={lst:redex2}]
 (define-extended-language Ext L
   (p (e ...))
   (P (e ... E e ...))
@@ -321,11 +329,11 @@ In order to write a reduction relation, it is idiomatic to write a small extensi
      (E e)
      hole)
   (v ($\lambda$ x e)))
-\end{lstlisting}
+\end{lstlisting} \end{minipage}
 
 In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a program, is matched to a (possibly zero-length) list of \texttt{e}. The non-terminal \texttt{E} represents an evaluation context, and is matched to the special symbol \texttt{hole} in order to identify it as such. In order that a function is evaluated before its argument, \texttt{E} is matched to the expression \texttt{(v E)}, rather than to \texttt{(e E)}.
 
-\begin{lstlisting}[caption=Defining a reduction relation in PLT Redex,label={lst:redex3}]
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=Defining a reduction relation in PLT Redex,label={lst:redex3}]
 (define red
   (reduction-relation
    Ext
@@ -337,17 +345,17 @@ In Listing \ref{lst:redex2} the non-terminal \texttt{p}, which represents a prog
           e_3 ...)
         (e_1 ... (in-hole E e_2) ... e_3 ...)
         "amb")))
-\end{lstlisting}
+\end{lstlisting} \end{minipage}
 
 The reduction relation is defined in Listing \ref{lst:redex3}. The first rule, \texttt{"application"}, uses a separately-defined metafunction \texttt{subst} to reduce a function application to the expression within the function, with the bound variable being substituted by the value of the argument. The second rule, \texttt{"amb"}, defines the semantics of amb.
 
 The use of PLT Redex goes beyond merely specifying a language, however. The reduction relation can then be applied on an expression in the language in order to execute the semantics.
 
-\begin{lstlisting}[caption=Applying the reduction relation with transitiv closure,label={lst:redexample1}]
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=Applying the reduction relation with transitive closure,label={lst:redexample1}]
 > (apply-reduction-relation* red (term
       ((($\lambda$ x (amb x x)) ($\lambda$ x x)))))
 '((($\lambda$ x x) ($\lambda$ x x)))
-\end{lstlisting}
+\end{lstlisting} \end{minipage}
 
 Listing \ref{lst:redexample1} depicts use of PLT Redex's command line interface. The function \texttt{apply-reduction-relation*} applies the transitive closure of the reduction relation, \textit{i.e.} it repeatedly applies the reduction relation \texttt{red} until the expression does not reduce further. Since reduction relations may be non-deterministic, it returns a list of all irreducible expressions found in the reduction tree.
 
@@ -366,9 +374,13 @@ I wrote the Racket code in DrRacket, a graphical development environment. This h
 
 \chapter{Implementation}
 
-\section{Parasitic threads}
+In sections \ref{implfirst}--\ref{impllast} I present the implementation of the algebraic effects CEK machine, which was based on the parasitic threads CEK machine. In sections \ref{implproving} onwards I show an example usage of the CEK machine---in this case, to determine whether particular schedules and programs have certain properties.
 
-I started by implementing the semantics of parasitic threads. Since the semantics of algebraic effects are similar to and based on the semantics of parasitic threads, and the semantics of parasitic threads were already well-defined,\cite{Siv2014} this provided an easier path to the algebraic effects semantics than starting from scratch. The parasitic thread semantics are more complex than the algebraic effects semantics because they include features like multiple threads and multiple channels along with transition rules that deal with spawning new threads and sending and receiving information through channels. I chose to omit these features from my implementation of parasitic thread semantics in order to avoid wasted effort.
+\section{Parasitic threads}\label{implfirst}
+
+I started by implementing the semantics of parasitic threads. Since the semantics of algebraic effects are similar to and based on the semantics of parasitic threads, and a CEK machine that modelled the semantics of parasitic threads had already been described,\cite{Siv2014} this provided an easier path to the algebraic effects semantics than starting from scratch.
+
+The parasitic thread semantics include features, like multiple threads and multiple channels along with transition rules that deal with spawning new threads and sending and receiving information through channels, that don't exist in the algebraic effects semantics. I chose to omit these features from my implementation of parasitic thread semantics in order to avoid wasted effort.
 
 The implementation itself can be found in Appendix XXXXX. The language, \texttt{Pt}, has 7 non-terminals and 10 reduction rules, which is reduced from the 12 non-terminals and 27 rules of the language as originally encoded. Examples of executions of \texttt{Pt} programs are given in Figures \ref{fig:traces_trivial} and \ref{fig:traces_parasite}. 
 
@@ -392,14 +404,16 @@ while the expression forms had been given as:
 
 \begin{align} 
 \nonumber e \in Exp &::= v\:  |\:  ... \\
-\nonumber v \in Val &::= unit\:  |\:  (\lambda x.e.r)\:  |\:  c\:  |\:  \kappa \end{align}
+\nonumber v \in Val &::= unit\:  |\:  (\lambda x.e.r)\:  |\:  ... \end{align}
 where $r$ is an environment.
+
+This meant that the left-hand side of the rule could not match any valid state, because it would be impossible to match $\lambda x.e$ with $e$
 
 This means that $\lambda x.e$ did not match with $e$ so the left-hand side was not valid, which caused Racket to fail to compile the language. My solution was to add the form $\lambda x.e \in e$.
 
 This discovery shows the usefulness of formalisation: the process of formalisation necessarily checked the semantics and led to the discovery of a mistake in a published paper.
 
-\section{Algebraic effects}
+\section{Algebraic effects}\label{impllast}
 
 The framework I created for the parasitic threads CEK machine provided a basis for the algebraic effects implementation, \texttt{Alg}, which can be found in Appendix YYYYY. The additional features I implemented include:
 
@@ -413,17 +427,86 @@ The framework I created for the parasitic threads CEK machine provided a basis f
 \item the \texttt{handle}, \texttt{perform}, and \texttt{continue} expressions of algebraic effects.
 \end{itemize}
 
-\texttt{Alg} features 17 frame types, increased from \texttt{Pt}'s 3, and 36 reduction rules.
+\texttt{Alg} features 18 frame types, increased from \texttt{Pt}'s 3, and 36 reduction rules. An example program that demonstrates the algebraic effects semantics is reduced in Figure \ref{fig:traces_algebra}. The final step in the reduction, \texttt{threadHalt}, transforms the program to \texttt{(halt unit) ()}, which signifies that the bottom-most fibre has finished execution by returning the value \texttt{unit}, that all other fibres that may have been generated have also halted, and that nothing is stored in memory.
+
+\begin{figure}
+\centering
+\caption{An example program in \texttt{Alg} that demonstrates the semantics of the \texttt{handle}, \texttt{perform}, and \texttt{continue} expressions}
+\label{fig:traces_algebra}
+\includegraphics[scale=0.35]{traces_algebra}
+\end{figure}
+
+\section{Proving properties}\label{implproving}
+
+I could then use my CEK machine to simulate the semantics for a given scheduler and program, in order to determine whether they had certain properties. The properties I defined were:
+
+\begin{itemize}
+\item \textbf{determinism}, \textit{i.e.}, a given execution trace is deterministic \textbf{iff}, for all states $s_1$, $s_2$, $s_3$, $$s_1 \longrightarrow s_2 \wedge s_1 \longrightarrow s_3 \Rightarrow s_2 = s_3$$
+
+I wrote the function \texttt{is\_deterministic} (see Listing \ref{lst:pltdeterminism}) to find whether a given program is deterministic. Given a scheduler expression $e_s$ and a program expression $e_p$, the exeuction of the scheduling semantics of $e_s$ on $e_p$ is deterministic iff \texttt{(is\_deterministic (term ((control (e\_s e\_p) ($\rho$) ()) ())))} returns true.
+
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=A function that determines whether a scheduler and program in \texttt{Alg} are deterministic,label={lst:pltdeterminism}]
+(define (is_deterministic p)
+  (let ([next
+         (apply-reduction-relation red p)])
+    (cond
+      [(empty? next) #t]
+      [(equal? (length next) 1)
+       (andmap is_deterministic next)]
+      [else #f])))
+\end{lstlisting} \end{minipage}
+
+\end{itemize}
+
+\section{Schedulers}
+I could now use these functions to test the specific properties of schedulers I wrote. The first scheduler, "Scheduler 1" (see Listing \ref{lst:sched1}), uses the memory to store a stack of fibres that have been spawned, yielded, but not yet terminated. The stored functions \texttt{enq} and \texttt{deq} push and pop continuations to and from the stack respectively.
+
+I then wrote a second scheduler, "Scheduler 2", based on Scheduler 1, which was designed to be incorrect. The change was to modify the \texttt{deq} function to simply return \texttt{unit}, instead of popping a continuation off the stack and continuing it.
+
+I could then test the schedules for the properties given above, when used to run a suite of test programs. The full results are given in Appendix ZZZZZZ. As expected, while both schedulers were shown to be deterministic (at least, for all programs that terminated), Scheduler 2 was found to be incomplete for those programs that performed an effect, \textit{i.e.} returned control to the scheduler, during their evaluation.
+
+\begin{minipage}{\linewidth} \begin{lstlisting}[caption=Scheduler 1 in \texttt{Alg},label={lst:sched1}]
+((control ((ref q unit) \;
+((ref deq ($\lambda$ x (if (deref q) unit unit
+  (continue ((ref tmp (fst (deref q))) \;
+    ((ref q (snd (deref q))) \;
+      (deref tmp))) unit)))) \;
+((ref enq ($\lambda$ x (ref q (x \, (deref q))))) \;
+(($\lambda$ prog
+  (letrec spawn 
+  ($\lambda$ f 
+    (handle f 
+      ($\lambda$ x ((deref deq) unit)) 
+      ($\lambda$ x 
+        (if (fst (fst x)) 
+        "Yield" 
+        (((deref enq) (snd x)) \;
+            ((deref deq) unit)) 
+        (((deref enq) (snd x)) \;
+            (spawn (snd (fst x))))))))
+  (spawn prog))))))))
+())
+\end{lstlisting} \end{minipage}
 
 \chapter{Evaluation}
 
-\section{Unit tests}
+In order to ascertain whether my implementation was working correctly, I wrote a suite of tests. The unit tests (Section \ref{testunit}) tested individual rules, and the functional tests (Section \ref{testfun}) tested the functionality of several rules working in sequence to provide the correct behaviour of the CEK machine.
 
+\section{Unit tests}\label{testunit}
 
+For each rule in \texttt{Pt} and \texttt{Alg}'s reduction relations, I wrote one or more tests to check for correct behaviour. Each test consists of an initial program, and the expected state of the program after applying the reduction relation with the Racket function \texttt{apply-reduction-relation} once. For each test I also checked using the \texttt{traces} function that the rule being tested was indeed the rule by which the program was reduced. The 
 
-The omission of the thread map led to the semantics making no use of the PLT Redex \texttt{hole} construct. This is normally used to determine the order in which expressions are evaluated, but this is actually made explicit in the parasitic thread semantics.
+\section{Functional tests}\label{testfun}
+
+\section{Summary}
 
 \chapter{Conclusion}
+
+The original aim for the project was to create a CEK machine that modelled the semantics of algebraic effects; and then to use this machine to be able to determine whether particular schedulers or programs had certain properties. I successfully achieved both of these goals.
+
+I have deviated from the project proposal because of a better understanding of the project. The success criteria in the proposal focused on determining whether my CEK machine implementation was correct in that it corresponded to the algebraic effects semantics. This included 'random testing', which I did not perform. However, I expanded on the criteria by going on to use the implementation to find whether certain schedulers were deterministic and complete, and this task has been successfully evaluated. If I were to carry out the project again, I would focus less on the correctness of my implementation and more on its use as a tool to test schedulers and programs.
+
+Overall, the project has been a success: my parasitic threads implementation of the existing description as a CEK machine has brought this description from the abstract to the concrete, and has found mistakes in that description; my implementation of algebraic effects worked and had enough functionality to write basic schedulers; and these schedulers were tested for completion and termination.
 
 \addcontentsline{toc}{chapter}{Bibliography}
 \bibliographystyle{unsrt}
@@ -436,5 +519,24 @@ The omission of the thread map led to the semantics making no use of the PLT Red
 \appendix
 
 \chapter{Project Proposal}
+
+\chapter{Unit tests}
+\section{\texttt{Pt}}
+\begin{tabular}{| p{3cm} | p{5cm} |  p{5cm} | p{1.5cm} |}
+\hline
+\textbf{Rule} & \textbf{Input} & \textbf{Expected output} & \textbf{Result} \\ \hline
+value & (control unit ($\rho$) ()) & (return ((ret unit))) & Passed \\ \hline
+variable & (control x (ρ (x unit)) ()) & (return ((ret unit))) & Passed \\ \hline
+closure & (control (λ x x) (ρ) ()) & (return ((ret (λ x x (ρ))))) & Passed \\ \hline
+application & (control ((λ x x) unit) (ρ) ()) & (control (λ x x) (ρ) ((arg unit (ρ)))) & Passed \\ \hline
+argument & (return ((ret (λ x x (ρ))) (arg unit (ρ)))) & (control unit (ρ) ((fun (λ x x (ρ))))) & Passed \\ \hline
+function & (return ((ret unit) (fun (λ x x (ρ))))) & (control x (ρ (x unit)) ()) & Passed \\ \hline
+spawnParasite & (control (spawn unit) (ρ) ()) & (control unit (ρ) () ((ret unit))) & Passed \\ \hline
+attachParasite & (control (attach ((ret unit))) (ρ) ()) & (return ((ret unit)) ((ret unit))) & Passed \\ \hline
+threadHalt & (return ((ret unit))) & (halt unit) & Passed \\ \hline
+parasiteHalt &   &  & Passed \\ \hline
+\end{tabular}
+
+\section{\texttt{Alg}}
 
 \end{document}
