@@ -1,7 +1,7 @@
 #lang racket
 (require redex)
 
-(define-language Pt
+(define-language Alg
   (e x
      v
      (e e)
@@ -48,7 +48,7 @@
      (halt v))
   (m ((x v) ...)))
 
-(define-extended-language Ev Pt
+(define-extended-language Ev Alg
   (p (s m))
   (P (S m))
   (S s
@@ -61,35 +61,21 @@
    (--> ((control v r (f ...) k ...) m)
         ((return ((ret v) f ...) k ...) m)
         "value")
-   #|
-(control unit (ρ) ())
-should reduce to
-(return ((ret unit)))
-   |#
    (--> ((control x r (f ...) k ...) m)
         ((return ((ret (var-lookup r x)) f ...) k ...) m)
         "variable")
-   #|
-(control x (ρ (x unit)) ())
-should reduce to
-(return ((ret unit)))
-   |#
    (--> ((control (λ x e) r (f ...) k ...) m)
         ((return ((ret (λ x e r)) f ...) k ...) m)
         "closure")
-   #|
-(control (λ x x) (ρ) ())
-should reduce to
-(return ((ret (λ x x (ρ)))))
-   |#
    (--> ((control (e_1 e_2) r (f ...) k ...) m)
         ((control e_1 r ((arg e_2 r) f ...) k ...) m)
         "application")
-   #|
-(control ((λ x x) unit) (ρ) ())
-should reduce to
-(control (λ x x) (ρ) ((arg unit (ρ))))
-   |#
+   (--> ((return ((ret v) (arg e r) f ...) k ...) m)
+        ((control e r ((fun v) f ...) k ...) m)
+        "argument")
+   (--> ((return ((ret v) (fun (λ x e (ρ (x_0 v_0) ...))) f ...) k ...) m)
+        ((control e (ρ (x v) (x_0 v_0) ...) (f ...) k ...) m)
+        "function")
    (--> ((control (if e_1 e_2 e_3 e_4) r (f ...) k ...) m)
         ((control e_1 r ((if1 e_2 e_3 e_4 r) f ...) k ...) m)
         "if1")
@@ -108,7 +94,7 @@ should reduce to
         "letrec")
    (--> ((control (ref x e) r (f ...) k ...) m)
         ((control e r ((rfr x) f ...) k ...) m)
-        "ref1")
+        "ref")
    (--> ((return ((ret v) (rfr x) f ...) k ...) ((x_0 v_0) ...))
         ((return ((ret unit) f ...) k ...) ((x_0 v_0) ... (x v)))
         (side-condition (not (term (ref-exists ((x_0 v_0) ...) x))))
@@ -119,42 +105,6 @@ should reduce to
    (--> ((control (deref x) r (f ...) k ...) ((x_left v_left) ... (x v) (x_right v_right) ...))
         ((return ((ret v) f ...) k ...) ((x_left v_left) ... (x v) (x_right v_right) ...))
         "deref")
-   (--> ((return ((ret v) (arg e r) f ...) k ...) m)
-        ((control e r ((fun v) f ...) k ...) m)
-        "argument")
-   #|
-(return ((ret (λ x x (ρ))) (arg unit (ρ))))
-should reduce to
-(control unit (ρ) ((fun (λ x x (ρ)))))
-   |#
-   (--> ((return ((ret v) (fun (λ x e (ρ (x_0 v_0) ...))) f ...) k ...) m)
-        ((control e (ρ (x v) (x_0 v_0) ...) (f ...) k ...) m)
-        "function")
-   #|
-(return ((ret unit) (fun (λ x x (ρ)))))
-should reduce to
-(control x (ρ (x unit)) ())
-   |#
-   (--> ((return ((ret v))) m)
-        ((halt v) m)
-        "threadHalt")
-   #|
-(return ((ret unit)))
-should reduce to
-(halt unit)
-   |#
-   (--> ((return ((ret v)) ((hdl v_hval v_heff) f ...) k_1 ...) m)
-        ((return ((ret v) (fun v_hval) f ...) k_1 ...) m)
-        "handleHalt")
-   (--> ((return ((ret v)) (f ...) k_1 ...) m)
-        ((return ((ret v) f ...) k_1 ...) m)
-        (side-condition (not (term (starts-with-hdl (f ...)))))
-        "parasiteHalt")
-   #|
-(return ((ret unit)) ((ret unit)))
-should reduce to
-(return ((ret unit)))
-   |#
    (--> ((control (handle e_1 e_2 e_3) r (f ...) k_1 ...) m)
         ((control e_1 r ((hnd1 e_2 e_3 r) f ...) k_1 ...) m)
         "handle1")
@@ -175,7 +125,7 @@ should reduce to
         "perform2")
    (--> ((return ((ret v) (hdl v_hval v_heff) f ...) k_1 ...) m)
         ((return ((ret v) f ...) k_1 ...) m)
-        "h_effHalt")
+        "effHalt")
    (--> ((control (continue e_1 e_2) r (f ...) k_1 ...) m)
         ((control e_1 r ((con1 e_2 r) f ...) k_1 ...) m)
         "continue1")
@@ -185,7 +135,6 @@ should reduce to
    (--> ((return ((ret v_2) (con2 v_1) f_left ... (hdl v_hval v_heff) f_right ...) k_1 ...) m)
         ((control v_2 (ρ) v_1 ((hdl v_hval v_heff) f_left ... (hdl v_hval v_heff) f_right ...) k_1 ...) m)
         "continue3")
-
    (--> ((control (fst e) r (f ...) k ...) m)
         ((control e r (fir f ...) k ...) m)
         "first1")
@@ -213,6 +162,16 @@ should reduce to
    (--> ((return ((ret v) (seq e r) f ...) k_1 ...) m)
         ((control e r (f ...) k_1 ...) m)
         "seq2")
+   (--> ((return ((ret v))) m)
+        ((halt v) m)
+        "threadHalt")
+   (--> ((return ((ret v)) ((hdl v_hval v_heff) f ...) k_1 ...) m)
+        ((return ((ret v) (fun v_hval) f ...) k_1 ...) m)
+        "handleHalt")
+   (--> ((return ((ret v)) (f ...) k_1 ...) m)
+        ((return ((ret v) f ...) k_1 ...) m)
+        (side-condition (not (term (starts-with-hdl (f ...)))))
+        "parasiteHalt")
    ))
 
 (define-metafunction Ev
@@ -271,7 +230,7 @@ should reduce to
         (((deref enq) (snd x)) \; (spawn (snd (fst x)))))))) 
   (spawn ((ret unit))))))) (ρ) ()) ())))
 |#
-
+#|
 (traces red (term
 ((control ((ref q unit) \;
 ((ref deq (λ x (if (deref q) unit unit
@@ -294,3 +253,4 @@ should reduce to
   (spawn prog))))))))
 ())))
 
+|#

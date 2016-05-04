@@ -1,5 +1,7 @@
 % Template for a Computer Science Tripos Part II project dissertation
 \documentclass[12pt,a4paper,twoside,openright]{report}
+\usepackage[UKenglish]{babel}
+\usepackage[UKenglish]{isodate}
 \usepackage[pdfborder={0 0 0}]{hyperref}    % turns references into hyperlinks
 \usepackage[margin=25mm]{geometry}  % adjusts page layout
 \usepackage{graphicx}  % allows inclusion of PDF, PNG and JPG images
@@ -9,7 +11,7 @@
 \usepackage{courier}
 \usepackage{tikz}
 \usepackage{enumitem}
-\usepackage{float}
+\usepackage{rotfloat}
 \floatstyle{plain}
 \restylefloat{figure}
 \usetikzlibrary{decorations.pathreplacing,shapes,arrows,shadows,decorations.markings}
@@ -17,6 +19,9 @@
 \usepackage{natbib}
 \usepackage{latexsym}
 \usepackage{amsmath}
+\usepackage{longtable}
+\usepackage{pdfpages}
+\usepackage{url}
 
 \definecolor{myblue}{rgb}{0,0.05,0.75}
 
@@ -52,8 +57,11 @@ xrightmargin=.2\textwidth
 \renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
                                         % more readable
 
-\begin{document}
+\hyphenation{Siv-arama-krish-nan}
 
+\begin{document}
+\selectlanguage{UKenglish}
+\cleanlookdateon
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Title
@@ -97,13 +105,13 @@ Supervisor:         & KC Sivaramakrishnan                    \\
 To formalise the semantics of algebraic effects, a proposed addition to OCaml, as a CEK machine, in order to perform subsequent random and exhaustive testing of concurrent schedules in the program. The testing should allow us to show desirable properties such as determinism and absence of deadlock.
 
 \section*{Work Completed}
-
+I implemented a simplified version of the parasitic threads CEK machine that was described in a journal paper. I used that as a foundation on which to implement a CEK machine that modelled the semantics of algebraic effects. I then showed how my formalisation could be used to evaluate whether a scheduler has a particular property.
 \section*{Special Difficulties}
 
 None.
  
-\newpage
-\section*{Declaration}
+\cleardoublepage
+\section*{Declaration of originality}
 
 I, James Wright of Trinity Hall, being a candidate for Part II of the Computer
 Science Tripos, hereby declare
@@ -115,7 +123,7 @@ extent for a comparable purpose.
 \bigskip
 \leftline{Signed}
 
-\medskip
+\vspace{2.5cm}
 \leftline{Date}
 
 \tableofcontents
@@ -131,17 +139,23 @@ extent for a comparable purpose.
 
 \section{Algebraic effects}
 
-There exist multicore-capable functional programming languages, such as Haskell, Manticore, F\#, and MultiMLton, whose runtimes provide support for concurrency---the concurrency primitives are baked in to the runtime system. This has the advantage of natively supporting multicore capabilities, but it also means that the runtimes can become burdensomely complicated. OCaml, on the other hand, is not yet multicore-capable and does not have this concurrency support.
+There exist multicore-capable functional programming languages, such as Haskell\cite{Marlow2009}, Manticore\cite{Fluet2010}, F\#\cite{Syme2011}, and MultiMLton\cite{Siv2014}, whose runtimes provide support for concurrency---the concurrency primitives are baked in to the runtime system. This has the advantage of natively supporting multicore capabilities, but it also means that the runtimes can become burdensomely complicated. OCaml, on the other hand, is not yet multicore-capable and does not have this concurrency support.
 
-The OCaml Labs team have been working on a multicore OCaml compiler, which includes as a feature algebraic effects. In contrast to the implementations in the other aforementioned functional programming languages, algebraic effects provide a modular abstraction for expressing effectful computation, which allows programmers to implement independent schedulers and new concurrency primitives as OCaml libraries.
+The OCaml Labs team have been working on a multicore OCaml compiler, which includes a feature called algebraic effects. In contrast to the implementations in the other aforementioned functional programming languages, algebraic effects provide a modular abstraction for expressing effectful computation, which allows programmers to implement independent schedulers and new concurrency primitives as OCaml libraries.
 
 \section{Formalisation}
 
-Formalisation langauges exist, which allow another language's semantics to be modelled. The first benefit of this is that when the language description is compiled, this necessarily tests that the language is consistent, \textit{e.g.} that no trivial mistakes such as omitting a particular form of expression have been made. The second and more powerful application of formalisation is that once compiled the semantics can be tested by simulating execution traces and determining whether a particular program has a particular property.
+My project exists within the context of "Run Your Research" by Klein, et al.\cite{Klein2012}, which shows the process of and effects of formalising a language or language feature in PLT Redex, which is a formalisation language.
+
+Formalisation languages allow another language's semantics to be modelled, by expressing a language's syntax, semantics, type system, and so on. 
+
+The primary benefit of this is that the process itself of typing out the semantics in a formalisation language and getting the formalisation to compile acts as a kind of 'spell-check', \textit{e.g.} reduction rules in the semantics that don't adhere to the language specification are detected, either by the human who is parsing the original semantics and formalising it, or by the computer at compilation time.
+
+The second application of formalisation is that, once compiled, the semantics can be tested and assertions proved by, for example, simulating execution traces. This means that a researcher can actually use the formalisation to prove hypotheses, rather than (as previously) 
 
 \section{Motivation}
 
-The syntax and semantics for algebraic effects have been designed and implemented by OCaml Labs, but the new semantics has not yet been formalised. Formalisation allows for random and exhaustive testing of concurrent schedules, which would allow us to show properties such as determinism or absence of deadlock.
+The syntax and semantics for algebraic effects have been designed and implemented by OCaml Labs, but the new semantics has not yet been formalised. Formalisation of algebraic effects would allow hypotheses to be tested mechanically by the computer rather than by hand, which would increase the confidence in any proved results.
 
 \section{Summary}
 
@@ -149,18 +163,18 @@ The aim for the project was to:
 
 \begin{enumerate}[label=(\alph*)]
 \item formalise the semantics of algebraic effects; and
-\item use this formalisation to be able to test schedulers and programs for desirable properties.
+\item show that this formalisation can be used to test schedulers and programs for desirable properties.
 \end{enumerate}
 
 \chapter{Preparation}
 
-In this chapter I will describe the background theory I investigated in order to understand the problem. In Section \ref{preppara} I explain the principles of parasitic threads; in Section \ref{prepalg} I explain the principles of algebraic effects, and how they relate to parasitic threads; Section \ref{prepcek} onwards cover the formalisation process and the tools I used.
+In this chapter I will describe the background theory investigated in order to understand the problem. Section \ref{preppara} explains the principles of parasitic threads; Section \ref{prepalg} explains the principles of algebraic effects, and how they relate to parasitic threads; Section \ref{prepcek} onwards cover the formalisation process and the tools used.
 
 \section{Starting point}\label{prepstart}
 
-My project is very much building on work already undertaken by OCaml Labs. Algebraic effects semantics have been designed and implemented in OCaml by the OCaml Labs team, who have also produced documentation that illustrates the behaviour of algebraic effects and provides examples of schedulers that exploit algebraic effects.
+My project builds on research that was recently undertaken by OCaml Labs. Algebraic effects semantics have been designed and implemented in OCaml by the OCaml Labs team, who have also produced documentation that illustrates the behaviour of algebraic effects and provides examples of schedulers that exploit algebraic effects.
 
-My implementation of algebraic effects as a CEK machine is heavily based on KC Sivaramakrishnan's description of parasitic threads as a CEK machine.\cite{Siv2014}
+My implementation of algebraic effects as a CEK machine is based on KC Sivaramakrishnan's 2014 journal paper on parasitic threads as a CEK machine\cite{Siv2014}.
 
 \section{Parasitic threads}\label{preppara}
 Parasitic threads are a system for implementing multi-thread behaviour inside a single processor thread. The processor thread maintains a list of parasitic threads, and a list of channels. Each parasitic thread is made up of a parasite stack, which is similar to subroutines on a call stack. The parasite on top is the one that is being executed. Execution may include: 
@@ -202,7 +216,7 @@ A CEK machine is a mechanical model for semantics. It is made up of a control co
 \item the \textbf{halt($v$)} state, which means that the machine's execution has concluded and the value $v$ is returned.
 \end{itemize}
 
-The environment component is a function from variable names to values. The continuation component is a stack of frames which represent the remainder of the computation.
+The environment component is a set of bindings between variable names and their values. The continuation component is a stack of frames which represent the remainder of the computation.
 
 \begin{figure}
 \centering
@@ -306,7 +320,7 @@ For the formalisation I chose to use PLT Redex, which is a language embedded in 
 \item the type system for the language.
 \end{itemize}
 
-I familiarised myself with PLT Redex through the Racket tutorial\footnote{http://docs.racket-lang.org/redex/tutorial.html}, on which the following demonstration is based. The tutorial implements a model of the $\lambda$-calculus with an additional 'amb' operator. This introduced the main concepts of the language that I would later use to formalise algebraic effects.
+I familiarised myself with PLT Redex through the Racket tutorial\cite{Tutorial}, on which the following demonstration is based. The tutorial implements a model of the $\lambda$-calculus with an additional 'amb' operator. This introduced the main concepts of the language that I would later use to formalise algebraic effects.
 
 \begin{minipage}{\linewidth} \begin{lstlisting}[caption=Defining a language in PLT Redex,label={lst:redex1}]
 (define-language L
@@ -366,15 +380,19 @@ Listing \ref{lst:redexample1} depicts use of PLT Redex's command line interface.
 \includegraphics[scale=0.75]{traces_example}
 \end{figure}
 
-The function \texttt{apply-reduction-relation*} can also be called with the option \texttt{all?} in order to include the entire set of terms, rather than just the irreducible terms. PLT Redex also offers the \texttt{traces} function, which graphically represents the reduction tree. For example, the graph in Figure \ref{fig:traces_example} shows the terms in the reduction tree for the term used in Listing \ref{lst:redexample1} as well as the names of the rules by which the subsequent terms were derived.
+The function \texttt{apply-reduction-relation*} can also be called with the option \texttt{all?} in order to include the entire set of terms, rather than just the irreducible terms. PLT Redex also offers the \texttt{traces} function, which graphically represents the reduction tree.
+
+For example, the graph in Figure \ref{fig:traces_example} shows the terms in the reduction tree for the term used in Listing \ref{lst:redexample1} as well as the names of the rules by which the subsequent terms were derived. The box in the top-left corner contains the starting state for the language. The arrow which points from the starting state to the second box indicates that the reduction \texttt{application} was applied to the expression, with the result contained in the second box. This continues until the reduction relation gets 'stuck' in the final state, in the bottom-right corner.
 
 \section{Tools used}
 
-I wrote the Racket code in DrRacket, a graphical development environment. This has a command line interface which allowed me to query the languages once they had been compiled. I used Git for source control for the code and the written artifacts, and regularly pushed to a Github repository for backup purposes.
+I wrote the code in DrRacket, a graphical development environment for Racket. As well as a text editor with syntax highlighting, it has a command line interface which allowed me to query the languages once they had been compiled. I used Git for source control for the code and the written artifacts, and regularly pushed to a Github repository for backup purposes.
+
+I already knew how to use Git, but I did have to familiarise myself with Racket, PLT Redex, and DrRacket.
 
 \chapter{Implementation}
 
-In sections \ref{implfirst}--\ref{impllast} I present the implementation of the algebraic effects CEK machine, which was based on the parasitic threads CEK machine. In sections \ref{implproving} onwards I show an example usage of the CEK machine---in this case, to determine whether particular schedules and programs have certain properties.
+The implementation of the algebraic effects CEK machine is presented in sections \ref{implfirst}--\ref{impllast}. This was based on the parasitic threads CEK machine. Sections \ref{implproving} onwards show an example usage of the CEK machine---in this case, to determine whether particular schedules and programs have certain properties.
 
 \section{Parasitic threads}\label{implfirst}
 
@@ -382,7 +400,7 @@ I started by implementing the semantics of parasitic threads. Since the semantic
 
 The parasitic thread semantics include features, like multiple threads and multiple channels along with transition rules that deal with spawning new threads and sending and receiving information through channels, that don't exist in the algebraic effects semantics. I chose to omit these features from my implementation of parasitic thread semantics in order to avoid wasted effort.
 
-The implementation itself can be found in Appendix XXXXX. The language, \texttt{Pt}, has 7 non-terminals and 10 reduction rules, which is reduced from the 12 non-terminals and 27 rules of the language as originally encoded. Examples of executions of \texttt{Pt} programs are given in Figures \ref{fig:traces_trivial} and \ref{fig:traces_parasite}. 
+The implementation itself can be found in Appendix \ref{apppt}. The language, \texttt{Pt}, has 7 non-terminals and 10 reduction rules, after being simplified from the 12 non-terminals and 27 rules of the language as originally encoded. Examples of executions of \texttt{Pt} programs are given in Figures \ref{fig:traces_trivial} and \ref{fig:traces_parasite}. 
 
 \begin{figure}
 \centering
@@ -401,21 +419,21 @@ The implementation itself can be found in Appendix XXXXX. The language, \texttt{
 During implementation I discovered a mistake in the original semantics. The rule \texttt{closure} had been given as
 $$\langle\lambda x.e, r, k, \overline{k} \rangle \longrightarrow \langle \texttt{ret} \lceil \lambda x.e.r \rceil : k \lhd \overline{k} \rangle$$
 while the expression forms had been given as:
-
 \begin{align} 
 \nonumber e \in Exp &::= v\:  |\:  ... \\
-\nonumber v \in Val &::= unit\:  |\:  (\lambda x.e.r)\:  |\:  ... \end{align}
+\nonumber v \in Val &::= unit\:  |\:  (\lambda x.e.r)\:  |\:  ... 
+\end{align}
 where $r$ is an environment.
 
-This meant that the left-hand side of the rule could not match any valid state, because it would be impossible to match $\lambda x.e$ with $e$
+This meant that the left-hand side of the rule could not match any valid state, because it would be impossible to match $\lambda x.e$ with $e$. This caused Racket to fail to compile the language.
 
-This means that $\lambda x.e$ did not match with $e$ so the left-hand side was not valid, which caused Racket to fail to compile the language. My solution was to add the form $\lambda x.e \in e$.
+My solution was to add $(\lambda x.e)$ to the set of expression forms. This corresponds to a perhaps intuitive understanding of how the \texttt{closure} rule should work: $(\lambda x.e)$ is defined by a programmer who shouldn't have to worry about the environment in which the function is defined; this is then made into a closure by the computer by combining it with the current environment.
 
 This discovery shows the usefulness of formalisation: the process of formalisation necessarily checked the semantics and led to the discovery of a mistake in a published paper.
 
 \section{Algebraic effects}\label{impllast}
 
-The framework I created for the parasitic threads CEK machine provided a basis for the algebraic effects implementation, \texttt{Alg}, which can be found in Appendix YYYYY. The additional features I implemented include:
+The framework I created for the parasitic threads CEK machine provided a basis for the algebraic effects implementation, \texttt{Alg}, which can be found in Appendix \ref{appalg}. The additional features I implemented include:
 
 \begin{itemize}
 \item a global memory which can be assigned to and dereferenced with corresponding \texttt{ref} and \texttt{deref} expressions;
@@ -429,13 +447,87 @@ The framework I created for the parasitic threads CEK machine provided a basis f
 
 \texttt{Alg} features 18 frame types, increased from \texttt{Pt}'s 3, and 36 reduction rules. An example program that demonstrates the algebraic effects semantics is reduced in Figure \ref{fig:traces_algebra}. The final step in the reduction, \texttt{threadHalt}, transforms the program to \texttt{(halt unit) ()}, which signifies that the bottom-most fibre has finished execution by returning the value \texttt{unit}, that all other fibres that may have been generated have also halted, and that nothing is stored in memory.
 
-\begin{figure}
+\begin{sidewaysfigure}
 \centering
+\includegraphics[scale=0.57]{traces_algebra}
 \caption{An example program in \texttt{Alg} that demonstrates the semantics of the \texttt{handle}, \texttt{perform}, and \texttt{continue} expressions}
 \label{fig:traces_algebra}
-\includegraphics[scale=0.35]{traces_algebra}
-\end{figure}
+\end{sidewaysfigure}
 
+\chapter{Evaluation}
+
+In order to ascertain whether my implementation was working correctly, I wrote a suite of tests. The unit tests (Section \ref{testunit}) tested individual rules, and the functional tests (Section \ref{testfun}) tested the functionality of several rules working in sequence to provide the correct behaviour of the CEK machine.
+
+\section{Unit tests}\label{testunit}
+
+For each rule in \texttt{Pt} and \texttt{Alg}'s reduction relations, I wrote one or more tests to check for correct behaviour. Each test consists of an initial program, and the expected state of the program after applying the reduction relation with the Racket function \texttt{apply-reduction-relation} once. For each test I could also check using the \texttt{traces} function that the rule being tested was indeed the rule by which the program was reduced. The full assortment of unit tests are provided in Appendix \ref{appunit}.
+
+I appended the unit tests to my Racket program using the \texttt{judgment-holds} [sic] Racket function, which tests whether two expressions are equivalent, and reports a warning if they are not. This was very useful because it provided regression testing, to make sure that any changes to the implementation did not change the functionality of the semantics.
+
+\subsection{\texttt{Pt}}
+\begin{tabular}{| p{2.5cm} | p{5.5cm} |  p{5.5cm} | p{1.5cm} |}
+\hline
+\textbf{Rule} & \textbf{Input} & \textbf{Expected output} & \textbf{Result} \\ \hline
+value & (control unit ($\rho$) ()) & (return ((ret unit))) & Passed \\ \hline
+variable & (control x ($\rho$ (x unit)) ()) & (return ((ret unit))) & Passed \\ \hline
+closure & (control ($\lambda$ x x) ($\rho$) ()) & (return ((ret ($\lambda$ x x ($\rho$))))) & Passed \\ \hline
+application & (control (($\lambda$ x x) unit) ($\rho$) ()) & (control ($\lambda$ x x) ($\rho$) ((arg unit ($\rho$)))) & Passed \\ \hline
+argument & (return ((ret ($\lambda$ x x ($\rho$))) (arg unit ($\rho$)))) & (control unit ($\rho$) ((fun ($\lambda$ x x ($\rho$))))) & Passed \\ \hline
+function & (return ((ret unit) (fun ($\lambda$ x x ($\rho$))))) & (control x ($\rho$ (x unit)) ()) & Passed \\ \hline
+spawnParasite & (control (spawn unit) ($\rho$) ()) & (control unit ($\rho$) () ((ret unit))) & Passed \\ \hline
+attachParasite & (control (attach ((ret unit))) ($\rho$) ()) & (return ((ret unit)) ((ret unit))) & Passed \\ \hline
+threadHalt & (return ((ret unit))) & (halt unit) & Passed \\ \hline
+parasiteHalt & (return ((ret unit)) ((ret unit))) & (return ((ret unit))) & Passed \\ \hline
+\end{tabular}
+
+\subsection{\texttt{Alg}}
+\begin{longtable}{| p{2.5cm} | p{5.5cm} |  p{5.5cm} | p{1.5cm} |}
+\hline
+\textbf{Rule} & \textbf{Input} & \textbf{Expected output} & \textbf{Result} \\ \hline
+value & ((control unit ($\rho$) ()) ()) & ((return ((ret unit))) ()) & Passed \\ \hline
+variable & ((control x ($\rho$ (x unit)) ()) ()) & ((return ((ret unit))) ()) & Passed \\ \hline
+closure & ((control ($\lambda$ x x) ($\rho$) ()) ()) & ((return ((ret ($\lambda$ x x ($\rho$))))) ()) & Passed \\ \hline
+application & ((control (($\lambda$ x x) unit) ($\rho$) ()) ()) & ((control ($\lambda$ x x) ($\rho$) ((arg unit ($\rho$)))) ()) & Passed \\ \hline
+argument & ((return ((ret ($\lambda$ x x ($\rho$))) (arg unit ($\rho$)))) ()) & ((control unit ($\rho$) ((fun ($\lambda$ x x ($\rho$))))) ()) & Passed \\ \hline
+function & ((return ((ret unit) (fun ($\lambda$ x x ($\rho$))))) ()) & ((control x ($\rho$ (x unit)) ()) ()) & Passed \\ \hline
+if1 & ((control (if "a" "b" "c" "d") ($\rho$) ()) ()) & ((control "a" ($\rho$) ((if1 "b" "c" "d" ($\rho$)))) ()) & Passed \\ \hline
+if2 & ((return ((ret "a") (if1 "b" "c" "d" ($\rho$)))) ()) & ((control "b" ($\rho$) ((if2 "a" "c" "d" ($\rho$)))) ()) & Passed \\ \hline
+iftrue & ((return ((ret "b") (if2 "b" "c" "d" ($\rho$)))) ()) & ((control "c" ($\rho$) ()) ()) & Passed \\ \hline
+iffalse & ((return ((ret "b") (if2 "a" "c" "d" ($\rho$)))) ()) & ((control "d" ($\rho$) ()) ()) & Passed \\ \hline
+letrec & ((control (letrec x "a" "b") ($\rho$) ()) ()) & ((control ((ref x "a") ; "b") ($\rho$ (x ($\lambda$ x\_x ((deref x) x\_x) ($\rho$)))) ()) ()) & Passed \\ \hline
+ref & ((control (ref x unit) ($\rho$) ()) ()) & ((control unit ($\rho$) ((rfr x))) ()) & Passed \\ \hline
+refnew & ((return ((ret unit) (rfr x))) ()) & ((return ((ret unit))) (x unit)) & Passed \\ \hline
+refupdate & ((return ((ret "b") (rfr x))) (x "a")) & ((return ((ret unit))) (x "b")) & Passed \\ \hline
+deref & ((control (deref x) ($\rho$) ()) (x unit)) & ((return ((ret unit))) (x unit)) & Passed \\ \hline
+handle1 & ((control (handle ((ret unit)) ($\lambda$ x "a") ($\lambda$ x "b")) ($\rho$) ()) ())  & ((control ((ret unit)) ($\rho$) ((hnd1 ($\lambda$ x unit) ($\lambda$ x unit)))) ()) & Passed \\ \hline
+handle2 & ((return ((ret ((ret unit))) (hnd1 ($\lambda$ x "a") ($\lambda$ x "b")))) ()) & ((control ($\lambda$ x unit) ($\rho$) ((hnd2 ((ret unit)) ($\lambda$ x "b")))) ()) & Passed \\ \hline
+handle3 & ((return ((ret ($\lambda$ x "a" ($\rho$))) (hnd2 ((ret unit)) ($\lambda$ x "b")))) ()) & ((control ($\lambda$ x "b") ($\rho$) ((hnd3 ((ret unit)) ($\lambda$ x "a" ($\rho$))))) ()) & Passed \\ \hline
+handle4 & ((return ((ret ($\lambda$ x "b" ($\rho$))) (hnd3 ((ret unit)) ($\lambda$ x "a" ($\rho$))))) ()) & ((return ((ret unit)) ((hdl (($\lambda$ x "a" ($\rho$)) ($\lambda$ x "b" ($\rho$)))))) ()) & Passed \\ \hline
+perform1 & ((control (perform unit) ($\rho$) ()) ()) & ((control unit ($\rho$) (prf)) ()) & Passed \\ \hline
+perform2 & ((return ((ret unit) prf) (hdl ($\lambda$ x "a" ($\rho$)) ($\lambda$ x "b" ($\rho$)))) ()) & ((return ((ret (v , ())) (fun ($\lambda$ x "b" ($\rho$))) (hdl ($\lambda$ x "a" ($\rho$)) ($\lambda$ x "b" ($\rho$))))) ()) & Passed \\ \hline
+\begin{comment}
+effHalt & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+continue1 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+continue2 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+continue3 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+first1 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+first2 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+second1 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+second2 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+pair1 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+pair2 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+pair3 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+seq1 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+seq2 & aaaaaaaaaaaaaaaaa & bbbbbbbbbbbb & Passed \\ \hline
+threadHalt & (return ((ret unit))) & (halt unit) & Passed \\ \hline
+threadHalt & (return ((ret unit))) & (halt unit) & Passed \\ \hline
+parasiteHalt & (return ((ret unit)) ((ret unit))) & (return ((ret unit))) & Passed \\ \hline
+\end{comment}
+\end{longtable}
+
+\section{Functional tests}\label{testfun}
+
+Once the implementation was complete, I could test it by using it to model the execution of some test programs. These provided evidence beyond the unit tests that the implementation worked as a cohesive system. I wrote the programs such that together they would test every rule in the reduction relation, and every form of non-terminal in the language.
 \section{Proving properties}\label{implproving}
 
 I could then use my CEK machine to simulate the semantics for a given scheduler and program, in order to determine whether they had certain properties. The properties I defined were:
@@ -456,6 +548,8 @@ I wrote the function \texttt{is\_deterministic} (see Listing \ref{lst:pltdetermi
       [else #f])))
 \end{lstlisting} \end{minipage}
 
+\item \textbf{completeness}, \textit{i.e.}, a scheduler $e_s$ is complete with respect to program $e_p$ iff the CEK machine evaluating $e_s (e_p)$ reaches a halt state not before all fibres spawned by $e_p$ have themselves terminated.
+
 \end{itemize}
 
 \section{Schedulers}
@@ -463,7 +557,9 @@ I could now use these functions to test the specific properties of schedulers I 
 
 I then wrote a second scheduler, "Scheduler 2", based on Scheduler 1, which was designed to be incorrect. The change was to modify the \texttt{deq} function to simply return \texttt{unit}, instead of popping a continuation off the stack and continuing it.
 
-I could then test the schedules for the properties given above, when used to run a suite of test programs. The full results are given in Appendix ZZZZZZ. As expected, while both schedulers were shown to be deterministic (at least, for all programs that terminated), Scheduler 2 was found to be incomplete for those programs that performed an effect, \textit{i.e.} returned control to the scheduler, during their evaluation.
+I could then test the schedules for the properties given above, when used to run a suite of test programs. Completeness was determined by designing the programs such that they store certain values in memory only in the case that all of their fibres are run to completion.
+
+The full results are given in Appendix E. As expected, while both schedulers were shown to be deterministic (at least, for all programs that terminated), Scheduler 2 was found to be incomplete for those programs that performed an effect, \textit{i.e.} returned control to the scheduler, during their evaluation.
 
 \begin{minipage}{\linewidth} \begin{lstlisting}[caption=Scheduler 1 in \texttt{Alg},label={lst:sched1}]
 ((control ((ref q unit) \;
@@ -488,17 +584,11 @@ I could then test the schedules for the properties given above, when used to run
 ())
 \end{lstlisting} \end{minipage}
 
-\chapter{Evaluation}
-
-In order to ascertain whether my implementation was working correctly, I wrote a suite of tests. The unit tests (Section \ref{testunit}) tested individual rules, and the functional tests (Section \ref{testfun}) tested the functionality of several rules working in sequence to provide the correct behaviour of the CEK machine.
-
-\section{Unit tests}\label{testunit}
-
-For each rule in \texttt{Pt} and \texttt{Alg}'s reduction relations, I wrote one or more tests to check for correct behaviour. Each test consists of an initial program, and the expected state of the program after applying the reduction relation with the Racket function \texttt{apply-reduction-relation} once. For each test I also checked using the \texttt{traces} function that the rule being tested was indeed the rule by which the program was reduced. The 
-
-\section{Functional tests}\label{testfun}
-
 \section{Summary}
+
+The unit and functional tests established that the semantics performed correctly with respect to their intuitive definition in the Preparation chapter. An interesting result was that through implementing the semantics of parasitic threads, I discovered a mistake in a published paper, as described in section \ref{implfirst}. This result came quite early in the implementation process, and it goes to show how effective the process of formalisation can be before even a single program's execution trace is modelled.
+
+The results I obtained from using the CEK machine to prove properties were admittedly modest, but I think they were significant in that they showed the capability of the machine to ascertain whether a particular program or group of programs has a particular property.
 
 \chapter{Conclusion}
 
@@ -517,26 +607,299 @@ Overall, the project has been a success: my parasitic threads implementation of 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % the appendices
 \appendix
+\chapter{\texttt{Pt}}\label{apppt}
 
-\chapter{Project Proposal}
+\begin{lstlisting}[xleftmargin=0pt, xrightmargin=0pt]
+(define-language Pt
+  (e x
+     v
+     (e e)
+     ($\lambda$ x e)
+     (spawn e)
+     (attach k)
+  (v unit
+     ($\lambda$ x e r)
+     κ
+     k)
+  (x variable-not-otherwise-mentioned)
+  (r ($\rho$ (x v) ...))
+  (k (f ...))
+  (f (ret v)
+     (arg e r)
+     (fun v))
+  (s (control e r k_0 k_1 ...)
+     (return k_0 k_1 ...)
+     (halt v)))
+(define-extended-language Ev Pt
+  (p s))
 
-\chapter{Unit tests}
-\section{\texttt{Pt}}
-\begin{tabular}{| p{3cm} | p{5cm} |  p{5cm} | p{1.5cm} |}
-\hline
-\textbf{Rule} & \textbf{Input} & \textbf{Expected output} & \textbf{Result} \\ \hline
-value & (control unit ($\rho$) ()) & (return ((ret unit))) & Passed \\ \hline
-variable & (control x (ρ (x unit)) ()) & (return ((ret unit))) & Passed \\ \hline
-closure & (control (λ x x) (ρ) ()) & (return ((ret (λ x x (ρ))))) & Passed \\ \hline
-application & (control ((λ x x) unit) (ρ) ()) & (control (λ x x) (ρ) ((arg unit (ρ)))) & Passed \\ \hline
-argument & (return ((ret (λ x x (ρ))) (arg unit (ρ)))) & (control unit (ρ) ((fun (λ x x (ρ))))) & Passed \\ \hline
-function & (return ((ret unit) (fun (λ x x (ρ))))) & (control x (ρ (x unit)) ()) & Passed \\ \hline
-spawnParasite & (control (spawn unit) (ρ) ()) & (control unit (ρ) () ((ret unit))) & Passed \\ \hline
-attachParasite & (control (attach ((ret unit))) (ρ) ()) & (return ((ret unit)) ((ret unit))) & Passed \\ \hline
-threadHalt & (return ((ret unit))) & (halt unit) & Passed \\ \hline
-parasiteHalt &   &  & Passed \\ \hline
-\end{tabular}
+(define red
+  (reduction-relation
+   Ev
+   #:domain p
+   (--> (control v r (f ...) k ...)
+        (return ((ret v) f ...) k ...)
+        "value")
+   (--> (control x r (f ...) k ...)
+        (return ((ret (var-lookup r x)) f ...) k ...)
+        "variable")
+   (--> (control ($\lambda$ x e) r (f ...) k ...)
+        (return ((ret ($\lambda$ x e r)) f ...) k ...)
+        "closure")
+   (--> (control (e_1 e_2) r (f ...) k ...)
+        (control e_1 r ((arg e_2 r) f ...) k ...)
+        "application")
+   (--> (return ((ret v) (arg e r) f ...) k ...)
+        (control e r ((fun v) f ...) k ...)
+        "argument")
+   (--> (return ((ret v) (fun ($\lambda$ x e ($\rho$ (x_0 v_0) ...))) f ...) k ...)
+        (control e ($\rho$ (x_0 v_0) ... (x v)) (f ...) k ...)
+        "function")
+   (--> (control (spawn e) r (f ...) k ...)
+        (control e r () ((ret unit) f ...) k ...)
+        "spawnParasite")
+   (--> (control (attach k_new) r (f ...) k ...)
+        (return k_new ((ret unit) f ...) k ...)
+        "attachParasite")
+   (--> (return ((ret v)))
+        (halt v)
+        "threadHalt")
+   (--> (return ((ret v)) k_1 k_2 ...)
+        (return k_1 k_2 ...)
+        "parasiteHalt")
+   ))
 
-\section{\texttt{Alg}}
+(define-metafunction Ev
+  var-lookup : r x -> v
+  [(var-lookup ($\rho$ (x v) (x_1 v_1) ...) x)
+   v]
+  [(var-lookup ($\rho$ (x_0 v_0) (x_1 v_1) ...) x)
+   (var-lookup ($\rho$ (x_1 v_1) ...) x)])
+\end{lstlisting}
+
+\chapter{\texttt{Alg}}\label{appalg}
+
+\begin{lstlisting}[xleftmargin=0cm, xrightmargin=0cm]
+(define-language Alg
+  (e x
+     v
+     (e e)
+     ($\lambda$ x e)
+     (letrec x e e)
+     (handle e e e)
+     (perform e)
+     (continue e e)
+     (fst e)
+     (snd e)
+     (if e e e e)
+     (ref x e)
+     (deref x)
+     (e \; e)
+     (e \, e))
+  (v unit
+     ($\lambda$ x e r)
+     k
+     (v \, v)
+     string)
+  (x variable-not-otherwise-mentioned)
+  (r ($\rho$ (x v) ...))
+  (k (f ...))
+  (f (ret v)
+     (arg e r)
+     (fun v)
+     (hnd1 e e r)
+     (hnd2 v e r)
+     (hnd3 v v)
+     (hdl v v)
+     (con1 e r)
+     (con2 v)
+     prf
+     (if1 e e e r)
+     (if2 v e e r)
+     (rfr x)
+     (seq e r)
+     fir
+     sec
+     (pair1 e r)
+     (pair2 v))
+  (s (control e r k_0 k_1 ...)
+     (return k_0 k_1 ...)
+     (halt v))
+  (m ((x v) ...)))
+
+(define-extended-language Ev Alg
+  (p (s m))
+  (P (S m))
+  (S s
+     hole))
+
+(define red
+  (reduction-relation
+   Ev
+   #:domain p
+   (--> ((control v r (f ...) k ...) m)
+        ((return ((ret v) f ...) k ...) m)
+        "value")
+   (--> ((control x r (f ...) k ...) m)
+        ((return ((ret (var-lookup r x)) f ...) k ...) m)
+        "variable")
+   (--> ((control ($\lambda$ x e) r (f ...) k ...) m)
+        ((return ((ret ($\lambda$ x e r)) f ...) k ...) m)
+        "closure")
+   (--> ((control (e_1 e_2) r (f ...) k ...) m)
+        ((control e_1 r ((arg e_2 r) f ...) k ...) m)
+        "application")
+   (--> ((return ((ret v) (arg e r) f ...) k ...) m)
+        ((control e r ((fun v) f ...) k ...) m)
+        "argument")
+   (--> ((return ((ret v) (fun ($\lambda$ x e ($\rho$ (x_0 v_0) ...))) f ...) k ...) m)
+        ((control e ($\rho$ (x v) (x_0 v_0) ...) (f ...) k ...) m)
+        "function")
+   (--> ((control (if e_1 e_2 e_3 e_4) r (f ...) k ...) m)
+        ((control e_1 r ((if1 e_2 e_3 e_4 r) f ...) k ...) m)
+        "if1")
+   (--> ((return ((ret v) (if1 e_2 e_3 e_4 r) f ...) k ...) m)
+        ((control e_2 r ((if2 v e_3 e_4 r) f ...) k ...) m)
+        "if2")
+   (--> ((return ((ret v_1) (if2 v_1 e_3 e_4 r) f ...) k ...) m)
+        ((control e_3 r (f ...) k ...) m)
+        "iftrue")
+   (--> ((return ((ret v_2) (if2 v_1 e_3 e_4 r) f ...) k ...) m)
+        ((control e_4 r (f ...) k ...) m)
+        (side-condition (not (equal? (term v_1) (term v_2))))
+        "iffalse")
+   (--> ((control (letrec x e_1 e_2) ($\rho$ (x_0 v_0) ...) (f ...) k ...) m)
+        ((control ((ref x e_1) \; e_2) 
+          ($\rho$ (x ($\lambda$ x_x ((deref x) x_x) ($\rho$ (x_0 v_0) ...)))
+          (x_0 v_0) ...) (f ...) k ...) m)
+        "letrec")
+   (--> ((control (ref x e) r (f ...) k ...) m)
+        ((control e r ((rfr x) f ...) k ...) m)
+        "ref")
+   (--> ((return ((ret v) (rfr x) f ...) k ...) ((x_0 v_0) ...))
+        ((return ((ret unit) f ...) k ...) ((x_0 v_0) ... (x v)))
+        (side-condition (not (term (ref-exists ((x_0 v_0) ...) x))))
+        "refnew")
+   (--> ((return ((ret v) (rfr x) f ...) k ...)
+          ((x_left v_left) ... (x v_old) (x_right v_right) ...))
+        ((return ((ret unit) f ...) k ...)
+          ((x_left v_left) ... (x v) (x_right v_right) ...))
+        "refupdate")
+   (--> ((control (deref x) r (f ...) k ...)
+          ((x_left v_left) ... (x v) (x_right v_right) ...))
+        ((return ((ret v) f ...) k ...)
+          ((x_left v_left) ... (x v) (x_right v_right) ...))
+        "deref")
+   (--> ((control (handle e_1 e_2 e_3) r (f ...) k_1 ...) m)
+        ((control e_1 r ((hnd1 e_2 e_3 r) f ...) k_1 ...) m)
+        "handle1")
+   (--> ((return ((ret v) (hnd1 e_2 e_3 r) f ...) k_1 ...) m)
+        ((control e_2 r ((hnd2 v e_3 r) f ...) k_1 ...) m)
+        "handle2")
+   (--> ((return ((ret v_2) (hnd2 v_1 e_3 r) f ...) k_1 ...) m)
+        ((control e_3 r ((hnd3 v_1 v_2) f ...) k_1 ...) m)
+        "handle3")
+   (--> ((return ((ret v_3) (hnd3 v_1 v_2) f ...) k_1 ...) m)
+        ((return v_1 ((hdl v_2 v_3) f ...) k_1 ...) m)
+        "handle4")
+   (--> ((control (perform e) r (f ...) k ...) m)
+        ((control e r (prf f ...) k ...) m)
+        "perform1")
+   (--> ((return ((ret v) prf f_0 ...)
+          ((hdl v_hval v_heff) f_1 ...) k_1 ...) m)
+        ((return ((ret (v \, (f_0 ...)))
+          (fun v_heff) (hdl v_hval v_heff) f_1 ...) k_1 ...) m)
+        "perform2")
+   (--> ((return ((ret v) (hdl v_hval v_heff) f ...) k_1 ...) m)
+        ((return ((ret v) f ...) k_1 ...) m)
+        "effHalt")
+   (--> ((control (continue e_1 e_2) r (f ...) k_1 ...) m)
+        ((control e_1 r ((con1 e_2 r) f ...) k_1 ...) m)
+        "continue1")
+   (--> ((return ((ret v) (con1 e r) f ...) k_1 ...) m)
+        ((control e r ((con2 v) f ...) k_1 ...) m)
+        "continue2")
+   (--> ((return ((ret v_2) (con2 v_1) f_left ...
+          (hdl v_hval v_heff) f_right ...) k_1 ...) m)
+        ((control v_2 ($\rho$) v_1 ((hdl v_hval v_heff) f_left ...
+          (hdl v_hval v_heff) f_right ...) k_1 ...) m)
+        "continue3")
+   (--> ((control (fst e) r (f ...) k ...) m)
+        ((control e r (fir f ...) k ...) m)
+        "first1")
+   (--> ((return ((ret (v_1 \, v_2)) fir f ...) k ...) m)
+        ((return ((ret v_1) f ...) k ...) m)
+        "first2")
+   (--> ((control (snd e) r (f ...) k ...) m)
+        ((control e r (sec f ...) k ...) m)
+        "second1")
+   (--> ((return ((ret (v_1 \, v_2)) sec f ...) k ...) m)
+        ((return ((ret v_2) f ...) k ...) m)
+        "second2")
+   (--> ((control (e_1 \, e_2) r (f ...) k ...) m)
+        ((control e_1 r ((pair1 e_2 r) f ...) k ...) m)
+        "pair1")
+   (--> ((return ((ret v) (pair1 e r) f ...) k ...) m)
+        ((control e r ((pair2 v) f ...) k ...) m)
+        "pair2")
+   (--> ((return ((ret v_2) (pair2 v_1) f ...) k ...) m)
+        ((return ((ret (v_1 \, v_2)) f ...) k ...) m)
+        "pair3")
+   (--> ((control (e_1 \; e_2) r (f ...) k_1 ...) m)
+        ((control e_1 r ((seq e_2 r) f ...) k_1 ...) m)
+        "seq1")
+   (--> ((return ((ret v) (seq e r) f ...) k_1 ...) m)
+        ((control e r (f ...) k_1 ...) m)
+        "seq2")
+   (--> ((return ((ret v))) m)
+        ((halt v) m)
+        "threadHalt")
+   (--> ((return ((ret v)) ((hdl v_hval v_heff) f ...) k_1 ...) m)
+        ((return ((ret v) (fun v_hval) f ...) k_1 ...) m)
+        "handleHalt")
+   (--> ((return ((ret v)) (f ...) k_1 ...) m)
+        ((return ((ret v) f ...) k_1 ...) m)
+        (side-condition (not (term (starts-with-hdl (f ...)))))
+        "parasiteHalt")
+   ))
+
+(define-metafunction Ev
+  var-lookup : r x -> v
+  [(var-lookup ($\rho$ (x v) (x_1 v_1) ...) x)
+   v]
+  [(var-lookup ($\rho$ (x_0 v_0) (x_1 v_1) ...) x)
+   (var-lookup ($\rho$ (x_1 v_1) ...) x)])
+
+(define-metafunction Ev
+  ref-exists : m x -> boolean
+  [(ref-exists ((x v) (x_1 v_1) ...) x) #t]
+  [(ref-exists () x) #f]
+  [(ref-exists ((x_0 v_0) (x_1 v_1) ...) x)
+   (ref-exists ((x_1 v_1) ...) x)])
+
+(define-metafunction Ev
+  starts-with-hdl : k -> boolean
+  [(starts-with-hdl ((hdl v_1 v_2) f ...)) #t]
+  [(starts-with-hdl (f ...)) #f])
+
+(define-metafunction Ev
+  deterministic : p -> boolean
+  [(deterministic p) (match (apply-reduction-relation red (term p))
+                       [() #t]
+                       [(p_next) (term (deterministic p_next))]
+                       [() #f])])
+
+(define (is_deterministic p)
+  (let ([next
+         (apply-reduction-relation red p)])
+    (cond
+      [(empty? next) #t]
+      [(equal? (length next) 1)
+       (andmap is_deterministic next)]
+      [else #f])))
+\end{lstlisting}
+
+\includepdf[pages=-]{proposal.pdf}
+
 
 \end{document}
