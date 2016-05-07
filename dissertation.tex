@@ -22,6 +22,7 @@
 \usepackage{longtable}
 \usepackage{pdfpages}
 \usepackage{url}
+\usepackage{booktabs}
 
 \definecolor{myblue}{rgb}{0,0.05,0.75}
 
@@ -57,7 +58,7 @@ xrightmargin=.2\textwidth
 \renewcommand{\baselinestretch}{1.1}    % adjust line spacing to make
                                         % more readable
 
-\hyphenation{Siv-arama-krish-nan}
+\hyphenation{Sivara-makrish-nan}
 
 \begin{document}
 \selectlanguage{UKenglish}
@@ -386,9 +387,7 @@ For example, the graph in Figure \ref{fig:traces_example} shows the terms in the
 
 \section{Tools used}
 
-I wrote the code in DrRacket, a graphical development environment for Racket. As well as a text editor with syntax highlighting, it has a command line interface which allowed me to query the languages once they had been compiled. I used Git for source control for the code and the written artifacts, and regularly pushed to a Github repository for backup purposes.
-
-I already knew how to use Git, but I did have to familiarise myself with Racket, PLT Redex, and DrRacket.
+I wrote the code in DrRacket, a graphical development environment for Racket, which I had not encountered before. As well as a text editor with syntax highlighting, it has a command line interface which allowed me to query the languages once they had been compiled. I used Git, which I was already familiar with, for source control for the code and the written artifacts, and regularly pushed to a Github repository for backup purposes.
 
 \chapter{Implementation}
 
@@ -396,11 +395,20 @@ The implementation of the algebraic effects CEK machine is presented in sections
 
 \section{Parasitic threads}\label{implfirst}
 
-I started by implementing the semantics of parasitic threads. Since the semantics of algebraic effects are similar to and based on the semantics of parasitic threads, and a CEK machine that modelled the semantics of parasitic threads had already been described,\cite{Siv2014} this provided an easier path to the algebraic effects semantics than starting from scratch.
+I started by implementing the semantics of parasitic threads as a CEK machine. This part of the implementation was based on the machine described in the MultiMLton paper\cite{Siv2014}, which I will refer to as the "Sivaramakrishnan machine". Although the structure of the machine was largely pre-determined by that description, I did have to make some design decisions at this stage.
 
-The parasitic thread semantics include features, like multiple threads and multiple channels along with transition rules that deal with spawning new threads and sending and receiving information through channels, that don't exist in the algebraic effects semantics. I chose to omit these features from my implementation of parasitic thread semantics in order to avoid wasted effort.
+The Sivaramakrishnan machine includes certain features that don't exist in the algebraic effects semantics. These include:
 
-The implementation itself can be found in Appendix \ref{apppt}. The language, \texttt{Pt}, has 7 non-terminals and 10 reduction rules, after being simplified from the 12 non-terminals and 27 rules of the language as originally encoded. Examples of executions of \texttt{Pt} programs are given in Figures \ref{fig:traces_trivial} and \ref{fig:traces_parasite}. 
+\begin{itemize}
+\item having a set of threads, any one of which could be chosen non-deterministically to be reduced next, rather than a single thread as in algebraic effects;
+\item associated reduction rules for spawning new threads;
+\item constants; and
+\item a set of blocking channels through which threads can communicate, along with reduction rules for sending and receiving information to/from channels.
+\end{itemize}
+
+I chose to omit these features from my implementation of parasitic thread semantics in order to make it more similar to the machine for algebraic effects that I would later create, and in order to avoid wasted effort.
+
+The result of the formalisation can be found in Appendix \ref{apppt}. The language, \texttt{Pt}, has 7 non-terminals and 10 reduction rules, after being simplified from the 12 non-terminals and 27 rules of the language as originally encoded. Examples of executions of \texttt{Pt} programs are given in Figures \ref{fig:traces_trivial}, which demonstrates the same evaluation as Figure \ref{fig:parasem} and \ref{fig:traces_parasite}, which demonstrates how parasites are spawned and terminated. 
 
 \begin{figure}
 \centering
@@ -416,7 +424,44 @@ The implementation itself can be found in Appendix \ref{apppt}. The language, \t
 \includegraphics[scale=0.6]{traces_parasite}
 \end{figure}
 
-During implementation I discovered a mistake in the original semantics. The rule \texttt{closure} had been given as
+Each reduction rule in \texttt{Pt} corresponds to a reduction rule in the Sivaramakrishnan machine. Examples are given in Figure \ref{fig:pt_compare}. It can be seen that the 'left hand side' of the reduction rule corresponds to the first term of each PLT redex rule, and the 'right hand side' to the second.
+
+\begin{figure}
+\centering
+\caption{Left: the rules \texttt{variable}, \texttt{closure}, and \texttt{application}, from the Sivaramakrishnan machine; Right: the corresponding rules in \texttt{Pt}.}
+\label{fig:pt_compare}
+\begin{tabular}{c p{0.5\linewidth}}
+\includegraphics[scale=0.65]{pt_variable}
+&
+\begin{lstlisting}[xleftmargin=0pt,xrightmargin=0pt,aboveskip=0pt,belowskip=0pt]
+(--> (control x r (f ...) k ...)
+      (return ((ret (var-lookup r x)) 
+        f ...) k ...)
+      "variable")
+\end{lstlisting}
+\\
+\includegraphics[scale=0.65]{pt_closure}
+&
+\begin{lstlisting}[xleftmargin=0pt,xrightmargin=0pt,aboveskip=0pt,belowskip=0pt]
+(--> (control ($\lambda$ x e) r (f ...) k ...)
+     (return ((ret (λ x e r)) f ...) 
+        k ...)
+     "closure")
+\end{lstlisting}
+\\
+\includegraphics[scale=0.65]{pt_application}
+&
+\begin{lstlisting}[xleftmargin=0pt,xrightmargin=0pt,aboveskip=0pt,belowskip=0pt]
+(--> (control (e_1 e_2) r (f ...) 
+        k ...)
+     (control e_1 r ((arg e_2 r) 
+        f ...) k ...)
+     "application")
+\end{lstlisting}
+\end{tabular}
+\end{figure}
+
+During implementation I discovered a mistake in the Sivaramakrishnan machine. The rule \texttt{closure} had been given as
 $$\langle\lambda x.e, r, k, \overline{k} \rangle \longrightarrow \langle \texttt{ret} \lceil \lambda x.e.r \rceil : k \lhd \overline{k} \rangle$$
 while the expression forms had been given as:
 \begin{align} 
@@ -427,9 +472,9 @@ where $r$ is an environment.
 
 This meant that the left-hand side of the rule could not match any valid state, because it would be impossible to match $\lambda x.e$ with $e$. This caused Racket to fail to compile the language.
 
-My solution was to add $(\lambda x.e)$ to the set of expression forms. This corresponds to a perhaps intuitive understanding of how the \texttt{closure} rule should work: $(\lambda x.e)$ is defined by a programmer who shouldn't have to worry about the environment in which the function is defined; this is then made into a closure by the computer by combining it with the current environment.
+My solution was to add $(\lambda x.e)$ to the set of expression forms. This corresponds to an intuitive understanding of how the \texttt{closure} rule should work: $(\lambda x.e)$ is defined by a programmer who shouldn't know the environment in which the function is defined; the closure $(\lambda x.e.r)$ is then generated at run-time, where $r$ is the current environment.
 
-This discovery shows the usefulness of formalisation: the process of formalisation necessarily checked the semantics and led to the discovery of a mistake in a published paper.
+This discovery shows the utility of formalisation: the process of formalisation necessarily checked the semantics and led to the discovery of a mistake in a published paper.
 
 \section{Algebraic effects}\label{impllast}
 
